@@ -24,6 +24,7 @@ from docx.enum.table import WD_ROW_HEIGHT_RULE  # Para el alto de las filas de l
 import os
 import django
 import sys
+from django.conf import settings
 
 # Ruta a la raíz del proyecto (donde está manage.py)
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -366,10 +367,10 @@ def capitulo4():
     #########################
     ### Tabla del capitulo 4.2.2.1 ###
     #########################
-    tabla42211 = doc.add_table(cols=5, style='Table Grid')
-    tabla42211.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    datos = Climas.objects.filter(fid_micro = '12')
 
-    datos = Climas.objects.filter(edo = 'COAHUILA DE ZARAGOZA')
+    tabla42211 = doc.add_table(cols=5, rows=len(datos) + 1, style='Table Grid')
+    tabla42211.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     for i, fila in enumerate(datos):
         cell = tabla42211.cell(i + 1, 0)
@@ -510,7 +511,7 @@ def capitulo4():
     """
     imagenCapitulo4222 = doc.add_paragraph()
     imagenCapitulo4222.text = ''
-    imagenCapitulo4222 = doc.add_picture('capitulo4/grafico.jpg')  # Ancho de la imagen en centimetros
+    imagenCapitulo4222 = doc.add_picture('C:\Users\User\Documents\Proyectos\Proyectos\Mayma\database\api\documentos\capitulo4')  # Ancho de la imagen en centimetros
     imagenCapitulo4222.alignment = WD_ALIGN_PARAGRAPH.CENTER  # Alineación al centro de la imagen
     imagenCapitulo4222.width = Cm(15.59)  # Ancho de la imagen en centimetros
     imagenCapitulo4222.height = Cm(10.16)  # Alto de la imagen en centimetros
@@ -663,7 +664,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.2.4 ###
     #########################
     tituloTabla4224 = doc.add_paragraph()
-    dti4224 = tituloTabla4224.add_run('\nTabla 4.5.-	Evapotranspiración.')
+    dti4224 = tituloTabla4224.add_run('\nTabla 4.5.- Evapotranspiración.')
     dti4224_format = tituloTabla4224.paragraph_format
     dti4224_format.line_spacing = 1.15
     dti4224_format.space_after = 0
