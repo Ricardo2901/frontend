@@ -117,6 +117,16 @@ class ElevacionMicrocuenca(models.Model):
         managed = False
         db_table = 'elevacion_microcuenca'
 
+class EspeciesVegetacion(models.Model):
+    codigo_veg = models.TextField(blank=True, null=True)
+    familia = models.TextField(blank=True, null=True)
+    nom_cientifico = models.TextField(blank=True, null=True)
+    nombre_comun = models.TextField(blank=True, null=True)
+    status = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'especies_vegetacion'
 
 class Evaporacion(models.Model):
     estacion = models.CharField(max_length=45, blank=True, null=True)

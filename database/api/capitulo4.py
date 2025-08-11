@@ -20,12 +20,22 @@ from docx.enum.table import WD_ROW_HEIGHT_RULE  # Para el alto de las filas de l
     ============================================================
     Archivos del REST framework
     ============================================================
+
+    Las siguientes importaciones son para el framework de REST, el cual se tienen que insertan en la 
+    parte de la documentacion. Todas estas importaciones son parte del framework de REST y son los datos
+    que se van a extraer en la base de datos
+   
 """
+from django.db.models import Max
 import os
 import django
 import sys
+
 from django.conf import settings
 from django.db.models.functions import Trim
+from django.db.models import Sum
+from collections import defaultdict
+import re
 
 # Ruta a la raíz del proyecto (donde está manage.py)
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -36,22 +46,40 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "database.settings")  # ← Camb
 django.setup()
 
 from api.models import Climas
-from api.models import Temperatura
-from api.models import Precipitacion
+from api.models import DescripcionClimas
+from api.models import DescripcionErosion
+from api.models import DescripcionGeologia
+from api.models import DescripcionProvincias
+from api.models import DescripcionSubprovincias
+from api.models import DescripcionSuelo
+from api.models import DescripcionTiposErosion
+from api.models import DescripcionTopografia
+from api.models import DescripcionVegetacion
+from api.models import ElevacionMicrocuenca
+from api.models import EspeciesVegetacion
 from api.models import Evaporacion
-from api.models import RiesgoPrecipitacion
+from api.models import ExposicionMicro
+from api.models import Municipios
+from api.models import PendienteMicro
+from api.models import Precipitacion
+from api.models import ProvinciasMicrocuencas
+from api.models import RiesgoCliclones
 from api.models import RiesgoGranizada
 from api.models import RiesgoHeladas
-from api.models import RiesgoCliclones
 from api.models import RiesgoInundacion
+from api.models import RiesgoPrecipitacion
 from api.models import RiesgoSequia
-from api.models import RiesgoTornado
-from api.models import RiesgoTormenta
-from api.models import TipoSuelo
-from api.models import TipoErosion
-from api.models import SubprovinciasMicrocuencas
-from api.models import ProvinciasMicrocuencas
 from api.models import RiesgoSismo
+from api.models import RiesgoTormenta
+from api.models import RiesgoTornado
+from api.models import SubprovinciasMicrocuencas
+from api.models import Temperatura
+from api.models import TipoErosion
+from api.models import TipoGeologia
+from api.models import TipoSuelo
+from api.models import TipoTopografia
+from api.models import TopominosMicro
+from api.models import Vegetacion
 
 """ 
     ============================================================
@@ -561,6 +589,12 @@ def capitulo4():
     # Capitulo 4.2.2.2
     ########################################################################################################################################################################
 
+    datos = Temperatura.objects.filter(
+            id_estacion = '5150'
+        )
+    
+    datos_tabla = {}
+
     #########################
     ### Titulo del capitulo 4.2.2.2 ###
     #########################
@@ -604,62 +638,61 @@ def capitulo4():
     #########################
     ### Tabla del capitulo 4.2.2.2 ###
     #########################
-    datos = Temperatura.objects.filter(
-            id_estacion = '5150'
-        )
-    
-    datos_tabla = {}
 
     if datos:
         fila = datos[0]
         datos_tabla = {
                 'maxima_ene': fila.max_ene,
                 'media_ene': fila.med_ene,
-                'mininma_ene':fila.min_ene,
+                'minima_ene':fila.min_ene,
 
                 'maxima_feb': fila.max_feb,
                 'media_feb': fila.med_feb,
-                'mininma_feb': fila.min_feb,
+                'minima_feb': fila.min_feb,
 
                 'maxima_mar': fila.max_mar,
                 'media_mar': fila.med_mar,
-                'mininma_mar': fila.min_mar,
+                'minima_mar': fila.min_mar,
 
                 'maxima_abr': fila.max_abr,
                 'media_abr': fila.med_abr,
-                'mininma_abr': fila.min_abr,
+                'minima_abr': fila.min_abr,
 
                 'maxima_may': fila.max_may,
                 'media_may': fila.med_may,
-                'mininma_may': fila.min_may,
+                'minima_may': fila.min_may,
 
                 'maxima_jun': fila.max_jun,
                 'media_jun': fila.med_jun,
-                'mininma_jun': fila.min_jun,
+                'minima_jun': fila.min_jun,
 
                 'maxima_jul': fila.max_jul,
                 'media_jul': fila.med_jul,
-                'mininma_jul': fila.min_jul,
+                'minima_jul': fila.min_jul,
 
                 'maxima_ago': fila.max_ago,
                 'media_ago': fila.med_ago,
-                'mininma_ago': fila.min_ago,
+                'minima_ago': fila.min_ago,
 
                 'maxima_sep': fila.max_sept,
                 'media_sep': fila.med_sept,
-                'mininma_sep': fila.min_sept,
+                'minima_sep': fila.min_sept,
 
                 'maxima_oct': fila.max_oct,
                 'media_oct': fila.med_oct,
-                'mininma_oct': fila.min_oct,
+                'minima_oct': fila.min_oct,
 
                 'maxima_nov': fila.max_nov,
                 'media_nov': fila.med_nov,
-                'mininma_nov': fila.min_nov,
+                'minima_nov': fila.min_nov,
 
                 'maxima_dic': fila.max_dic,
                 'media_dic': fila.med_dic,
-                'mininma_dic': fila.min_dic,
+                'minima_dic': fila.min_dic,
+
+                'maxima_total': fila.max_anual,
+                'media_total': fila.med_anual,
+                'minima_total': fila.min_anual
         }
     
     tabla4 = doc.add_table(rows=15, cols=4, style='Table Grid')
@@ -1519,7 +1552,7 @@ def capitulo4():
     ### Descripcion del capitulo 4.2.2.6.1.7 ###
     #########################
     di422617 = doc.add_paragraph()
-    descripcionCapitulo422617 = di422617.add_run('Otro de los fenómenos naturales que se han estado presentando en los últimos años son los tornados, aun cuando no se tiene está área contemplada en los Atlas de riesgo tanto de Protección Civil Estatal como del CENAPRED (Nacional), ante las condiciones extremas que se presentan y las grandes planicies, existe _______ posibilidad de ocurrencia de este fenómeno, es necesario considerar a este fenómeno si bien no tornados, si fuertes vientos en el área, si las condiciones climatológicas son idóneas para este fenómeno, el proyecto requerirá de un monitoreo continuo. (Ver anexo Mapa 4.9.- Riesgo por Tornados)')
+    descripcionCapitulo422617 = di422617.add_run(f'Otro de los fenómenos naturales que se han estado presentando en los últimos años son los tornados, aun cuando no se tiene está área contemplada en los Atlas de riesgo tanto de Protección Civil Estatal como del CENAPRED (Nacional), ante las condiciones extremas que se presentan y las grandes planicies, existe {fila.riesgo} posibilidad de ocurrencia de este fenómeno, es necesario considerar a este fenómeno si bien no tornados, si fuertes vientos en el área, si las condiciones climatológicas son idóneas para este fenómeno, el proyecto requerirá de un monitoreo continuo. (Ver anexo Mapa 4.9.- Riesgo por Tornados)')
     descripcionCapitulo422617_format = di422617.paragraph_format
     descripcionCapitulo422617_format.line_spacing = 1.15
     descripcionCapitulo422617_format.space_after = 0
@@ -1575,9 +1608,81 @@ def capitulo4():
     #########################
     ### Llamar la tabla de la base de datos ###
     #########################
-    datos = TipoSuelo.objects.filter(
+    """
+        *******************************
+            Tabla de Suelos Microcuenca
+        *******************************
+    """
+    tipoSuelo = TipoSuelo.objects.filter(
         nom_micro = '24-103-01-002'
-        )
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in tipoSuelo:
+        suelo = fila.tipo  # ej: 'Tipo de Suelo'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[suelo]['superficie'] += superficie
+        agrupados[suelo]['km2'] += km2
+        agrupados[suelo]['textura'] = fila.textura  # Asumiendo que 'textura' es un campo en TipoSuelo
+
+        total_km2 += km2
+        total_superficie = total_km2 * 100
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for suelo, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'suelo': suelo,
+            'textura': valores['textura'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    suelo_maxima = next(item['suelo'] for item in resultado if item['km2'] == maxima_km2)
+    textura_maxima = next(item['textura'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    suelo_minima = next(item['suelo'] for item in resultado if item['km2'] == minima_km2)
+    textura_minima = next(item['textura'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_textura = segundo['textura']
+        segundo_suelo = segundo['suelo']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_suelo = "N/A"
+        segundo_porcentaje = 0
 
     #########################
     ### Titulo del capitulo 4.2.2.7 ###
@@ -1622,132 +1727,111 @@ def capitulo4():
     #########################
     ### Tabla del capitulo 4.2.2.7 ###
     #########################
-    """encabezados = [
+    encabezados = [
         'Tipo',
         'Textura',
-        'Superficie Ha',
-        'km\u00B2',
-        'Porcentaje'
+        'Superficie',
+        'km2',
+        'Porcentaje',
     ]
-    tabla4227 = doc.add_table(rows=len(datos) + 2, cols=len(encabezados), style='Table Grid')
 
-    total_superficie = 0
-    total_km = 0
-
-    for fila in datos:
-        try:
-            superficie = float(fila.superficie)
-            total_superficie += superficie
-        except (TypeError, ValueError):
-            pass
-
-        try:
-            superficie = float(fila.superficie)
-            kilometro2 = superficie / 100
-            total_km2 += kilometro2
-        except (TypeError, ValueError):
-            pass
+    tabla422_111 = doc.add_table(cols=len(encabezados), rows=len(resultado) + 2, style='Table Grid')
 
     for i, cols in enumerate(encabezados):
-        cell = tabla42211.cell(0, i)
-        t42211 = cell.paragraphs[0].add_run(f'{cols}')
-        t42211.font.name = 'Arial'
-        t42211.font.size = Pt(12)
-        t42211.font.bold = True
-        cell.vetical_alignment = WD_ALIGN_VERTICAL.CENTER
+        cell = tabla422_111.cell(0, i)
+        t422_111 = cell.paragraphs[0].add_run(cols)
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
         cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-        cell_background_color(cell, "#0080FF")
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+        cell_background_color(cell, '4F81BD')
 
-    for i, fila in enumerate(datos):
-        suelo = fila.tipo or ""
-        textura = fila.textura or ""
-        superficie = fila.superficie
-        km2 = fila.km2
+    for i, filas in enumerate(resultado):
 
-        try:
-            superficie = float(fila.superficie)
-            porcentaje = (superficie / total_superficie) * 100 if total_superficie > 0 else 0
-            porcentaje = porcentaje
-        except (TypeError, ValueError):
-            porcentaje = 0
-
-        cell = tabla42211.cell(i + 1, 0)
-        t42211 = cell.paragraphs[0].add_run(f'{suelo or ""}')
-        t42211.font.name = 'Arial'
-        t42211.font.size = Pt(12)
-        t42211.font.bold = True
-
-        cell = tabla42211.cell(i + 1, 1)
-        t42211 = cell.paragraphs[0].add_run(f'{textura or ""}')
-        t42211.font.name = 'Arial'
-        t42211.font.size = Pt(12)
-        cell.vetical_alignment = WD_ALIGN_VERTICAL.CENTER
+        cell = tabla422_111.cell(i + 1, 0)
+        t422_111 = cell.paragraphs[0].add_run(filas['suelo'])
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
         cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
 
-        cell = tabla42211.cell(i + 1, 2)
-        t42211 = cell.paragraphs[0].add_run(f'{superficie or ""}')
-        t42211.font.name = 'Arial'
-        t42211.font.size = Pt(12)
-        cell.vetical_alignment = WD_ALIGN_VERTICAL.CENTER
+        cell = tabla422_111.cell(i + 1, 1)
+        t422_111 = cell.paragraphs[0].add_run(f'{filas['textura']}')
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
         cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
 
-        cell = tabla42211.cell(i + 1, 3)
-        t42211 = cell.paragraphs[0].add_run(f'{km2 or ""}')
-        t42211.font.name = 'Arial'
-        t42211.font.size = Pt(12)
-        cell.vetical_alignment = WD_ALIGN_VERTICAL.CENTER
+        cell = tabla422_111.cell(i + 1, 3)
+        t422_111 = cell.paragraphs[0].add_run(f"{filas['km2']:.2f}")
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
         cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
 
-        cell = tabla42211.cell(i + 1, 4)
-        t42211 = cell.paragraphs[0].add_run(f'{round(porcentaje, 3)}%')
-        t42211.font.name = 'Arial'
-        t42211.font.size = Pt(12)
-        cell.vetical_alignment = WD_ALIGN_VERTICAL.CENTER
+        km2 = filas['km2']
+        superficie = km2 * 100
+
+        cell = tabla422_111.cell(i + 1, 2)
+        t422_111 = cell.paragraphs[0].add_run(f"{superficie:.2f}")
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
         cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla422_111.cell(i + 1, 4)
+        t422_111 = cell.paragraphs[0].add_run(f"{filas['porcentaje_km2']:.2f}%")
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
 
     # ✅ Celdas fusionadas
-    celda_fusionada = len(datos) + 1  # +1 porque starts from 0 (encabezado + datos + esta fila total)
-    row = tabla42211.rows[celda_fusionada]
+    celda_fusionada = len(resultado) + 1  # +1 porque starts from 0 (encabezado + datos + esta fila total)
+    row = tabla422_111.rows[celda_fusionada]
 
     # Fusionar columna 0 y 1
     merged_cell = row.cells[0].merge(row.cells[1])
 
     # Agregar texto a la celda fusionada
-    t42211 = merged_cell.paragraphs[0].add_run('Línea Total')
-    t42211.font.name = 'Arial'
-    t42211.font.size = Pt(12)
-    t42211.bold = True
+    t422_111 = merged_cell.paragraphs[0].add_run('Total')
+    t422_111.font.name = 'Arial'
+    t422_111.font.size = Pt(12)
+    t422_111.bold = True
     merged_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     # Color de fondo (requiere función adicional que modifica XML)
     #cell_background_color(merged_cell, "#2569FA")
 
     # Total de superficie
-    cell = tabla42211.cell(celda_fusionada, 2)
-    t42211 = cell.paragraphs[0].add_run(f'{round(total_superficie, 3) or ""}')
-    t42211.font.name = 'Arial'
-    t42211.font.size = Pt(12)
-    t42211.font.bold = True
+    cell = tabla422_111.cell(celda_fusionada, 2)
+    t422_111 = cell.paragraphs[0].add_run(f'{round(total_superficie, 3) or ""}')
+    t422_111.font.name = 'Arial'
+    t422_111.font.size = Pt(12)
+    t422_111.font.bold = True
+    cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     # Total de km2
-    cell = tabla42211.cell(celda_fusionada, 3)
-    t42211 = cell.paragraphs[0].add_run(f'{round(total_km2, 3) or ""}')
-    t42211.font.name = 'Arial'
-    t42211.font.size = Pt(12)
-    t42211.font.bold = True
+    cell = tabla422_111.cell(celda_fusionada, 3)
+    t422_111 = cell.paragraphs[0].add_run(f'{round(total_km2, 3) or ""}')
+    t422_111.font.name = 'Arial'
+    t422_111.font.size = Pt(12)
+    t422_111.font.bold = True
+    cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     # Total de porcentaje
-    cell = tabla42211.cell(celda_fusionada, 4)
-    t42211 = cell.paragraphs[0].add_run(f'100%')
-    t42211.font.name = 'Arial'
-    t42211.font.size = Pt(12)
-    t42211.font.bold = True"""
+    cell = tabla422_111.cell(celda_fusionada, 4)
+    t422_111 = cell.paragraphs[0].add_run(f'100%')
+    t422_111.font.name = 'Arial'
+    t422_111.font.size = Pt(12)
+    t422_111.font.bold = True
+    cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     #########################
     ### Descripcion del capitulo 4.2.2.7 ###
     #########################
     di4227 = doc.add_paragraph()
-    descripcionCapitulo4227 = di4227.add_run('\nEl suelo en el sistema ambiental está directamente vinculado a las condiciones topográficas y geomorfológicas, dentro de esta, objeto del presente estudio encontramos una dominancia de los tipos de suelo ________________________________________ respectivamente ambas ambos con _______________________________________________________________. (Ver anexo Mapa 4.11.- Tipos de Suelos).')
+    descripcionCapitulo4227 = di4227.add_run(f'\nEl suelo en el sistema ambiental está directamente vinculado a las condiciones topográficas y geomorfológicas, dentro de esta, objeto del presente estudio encontramos una dominancia de los tipos de suelo {suelo_maxima.capitalize()} y {segundo_suelo.capitalize()} con {porcentaje_maximo:.2f}% y {segundo_porcentaje:.2f} respectivamente con textura {textura_maxima.capitalize()}, siendo {suelo_minima.capitalize()} con {porcentaje_minimo:.2f}%. (Ver anexo Mapa 4.11.- Tipos de Suelos).')
     descripcionCapitulo4227_format = di4227.paragraph_format
     descripcionCapitulo4227_format.line_spacing = 1.15
     #descripcionCapitulo4227_format.space_after = 0
@@ -1782,18 +1866,72 @@ def capitulo4():
     tituloTabla4227.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     #########################
+    ### Llamar la tabla de la base de datos y relacionarla con otra tabla ###
+    #########################
+    suelo_global = resultado[0]['suelo'] if resultado else None  # Asumiendo que 'suelo' es un campo en TipoSuelo
+
+    """
+        *******************************
+            Tabla de Descripcion de Suelos
+        *******************************
+    """
+
+    #########################
     ### Tabla del capitulo 4.2.2.7 ###
     #########################
-    tabla4227 = doc.add_table(rows=9, cols=3, style='Table Grid')
+    encabezados = [
+        'Tipo de Suelo',
+        'Descripción',
+        'Localizacion',
+    ]
 
-    for tabla in range(3):
-        cell = tabla4227.cell(0, tabla)
-        t4227 = cell.paragraphs[0].add_run(f'Col {tabla + 1}')
+    tabla4227 = doc.add_table(rows=len(resultado) + 1, cols=len(encabezados), style='Table Grid')
+
+    for i, cols in enumerate(encabezados):
+        cell = tabla4227.cell(0, i)
+        t4227 = cell.paragraphs[0].add_run(f'{cols}')
         t4227.font.name = 'Arial'
         t4227.font.size = Pt(12)
         t4227.font.bold = True
         cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         cell_background_color(cell, '4F81BD')
+
+    for i, fila in enumerate(resultado):
+        tipo_suelo = fila['suelo'].upper().strip()  # Asegurarse de que el tipo de suelo sea un string
+        print('\n+++++++++++++++++++++++++++++++++++++++\n' + tipo_suelo)
+
+        descripcion_obj = DescripcionSuelo.objects.filter(suelo=tipo_suelo).first()
+
+        if descripcion_obj:
+            descripcion = descripcion_obj.descripcion
+            print(f"Descripcion: {descripcion}")
+        else:
+            descripcion = "Datos no disponibles"
+            print("No hay descripción para este tipo de suelo")
+
+        cell = tabla4227.cell(i + 1, 0)
+        t4227 = cell.paragraphs[0].add_run(f'{str(tipo_suelo)}')
+        t4227.font.name = 'Arial'
+        t4227.font.size = Pt(12)
+        t4227.font.bold = True
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        #cell_background_color(cell, '4F81BD')
+
+        cell = tabla4227.cell(i + 1, 1)
+        t4227 = cell.paragraphs[0].add_run(f'{str(descripcion)}')
+        t4227.font.name = 'Arial'
+        t4227.font.size = Pt(12)
+        #t4227.font.bold = True
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        #cell_background_color(cell, '4F81BD')
+
+        cell = tabla4227.cell(i + 1, 2)
+        t4227 = cell.paragraphs[0].add_run(f'Datos no Disponibles')
+        t4227.font.name = 'Arial'
+        t4227.font.size = Pt(12)
+        #t4227.font.bold = True
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        #cell_background_color(cell, '4F81BD')
 
     ########################################################################################################################################################################
     # Capitulo 4.2.2.7.1
@@ -2252,7 +2390,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(9.29), height=Cm(8.77))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(8.71), height=Cm(10.16))
     imagenCapitulo4.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     #########################
@@ -2368,7 +2506,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.5), height=Cm(2.3))
     imagenCapitulo4.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     #########################
@@ -2429,7 +2567,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.5), height=Cm(3.77))
     imagenCapitulo4.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     #########################
@@ -2983,7 +3121,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(8.71), height=Cm(10.16))
     imagenCapitulo4.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     #########################
@@ -3796,11 +3934,9 @@ def capitulo4():
     #########################
     ### Llamar a la tabla de la bd ###
     #########################
-    sismicidad = RiesgoSismo.objects.filter(
+    topografia = TipoTopografia.objects.filter(
         nom_micro = '24-103-01-002'
         )
-    
-    fila_sismicidad = sismicidad[0]
 
     #########################
     ### Tabla del capitulo 4.2.2.11 ###
@@ -3810,7 +3946,7 @@ def capitulo4():
         'Tipo', 'Superficie', 'km\u00B2', 'Porcentaje'
     ]
 
-    tabla422_11 = doc.add_table(cols=4, rows=5, style='Table Grid')
+    tabla422_11 = doc.add_table(cols=len(encabezados), rows=len(topografia) + 1, style='Table Grid')
 
     for i, cols in enumerate(encabezados):
         cell = tabla422_11.cell(0, i)
@@ -3820,33 +3956,55 @@ def capitulo4():
         cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
 
-        cell = tabla422_11.cell(0, cols)
+        cell = tabla422_11.cell(0, i)
         cell_background_color(cell, '4F81BD')
 
-    for i, filas in enumerate(fila_sismicidad):
-        cell = tabla422_11.cell(rows + 1, 0)
-        t422_11 = cell.paragraphs[0].add_run(f'{filas.tipo}')
+    """total_superficie = 0
+    total_km2 = 0
+
+    for fila in datos:
+        try:
+            superficie = float(fila.superficie)
+            total_superficie += superficie
+        except (TypeError, ValueError):
+            pass
+
+        try:
+            superficie = float(fila.superficie)
+            total_superficie += superficie
+            porcentaje = (superficie / total_superficie) * 100
+        except (TypeError, ValueError):
+            pass"""
+
+    for i, filas in enumerate(topografia):
+        tipo = filas.tipo or ""
+        superficie = filas.superficie or ""
+        km2 = filas.km2 or ""
+        """porcentaje = filas.porcentaje or """""
+
+        cell = tabla422_11.cell(i + 1, 0)
+        t422_11 = cell.paragraphs[0].add_run(f'{tipo}')
         t422_11.font.size = Pt(12)
         t422_11.font.name = 'Arial'
         cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
 
-        cell = tabla422_11.cell(rows + 1, 1)
-        t422_11 = cell.paragraphs[0].add_run(f'{filas.superficie}')
+        cell = tabla422_11.cell(i + 1, 1)
+        t422_11 = cell.paragraphs[0].add_run(f'{superficie}')
         t422_11.font.size = Pt(12)
         t422_11.font.name = 'Arial'
         cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
 
-        cell = tabla422_11.cell(rows + 1, 2)
-        t422_11 = cell.paragraphs[0].add_run(f'{filas.km2}')
+        cell = tabla422_11.cell(i + 1, 2)
+        t422_11 = cell.paragraphs[0].add_run(f'{km2}')
         t422_11.font.size = Pt(12)
         t422_11.font.name = 'Arial'
         cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
 
-        cell = tabla422_11.cell(rows + 1, 3)
-        t422_11 = cell.paragraphs[0].add_run(f'{filas.porcentaje}')
+        cell = tabla422_11.cell(i + 1, 3)
+        t422_11 = cell.paragraphs[0].add_run(f'')
         t422_11.font.size = Pt(12)
         t422_11.font.name = 'Arial'
         cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -3879,23 +4037,38 @@ def capitulo4():
     dti422_11.font.size = Pt(12)
     tituloTabla422_11.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
+    """#########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    filas_topologia = topografia[0]
+    tipo = filas_topologia.tipo
+
+    descripcionTopologia = DescripcionTopografia.objects.filter(
+        tipo = tipo
+        )"""
+    
     #########################
     ### Tabla del capitulo 4.2.2.11 ###
     #########################
+    encabezados = [
+        'Formacion Topografica',
+        'Descripcion'
+    ]
 
-    tabla422_11 = doc.add_table(cols=2, rows=5, style='Table Grid')
+    tabla422_11 = doc.add_table(cols=len(encabezados), rows=5, style='Table Grid')
 
-    for cols in range(2):
-        for rows in range(5):
-            cell = tabla422_11.cell(rows, cols)
-            t422_11 = cell.paragraphs[0].add_run(' ')
-            t422_11.font.size = Pt(12)
-            t422_11.font.name = 'Arial'
-            cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-            cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+    for i, cols in enumerate(encabezados):
+        cell = tabla422_11.cell(0, i)
+        t422_11 = cell.paragraphs[0].add_run(f'{cols}')
+        t422_11.font.size = Pt(12)
+        t422_11.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
 
-        cell = tabla422_11.cell(0, cols)
+        cell = tabla422_11.cell(0, i)
         cell_background_color(cell, '4F81BD')
+
+    
 
     ########################################################################################################################################################################
     # Capitulo 4.2.2.11.1
@@ -3915,10 +4088,67 @@ def capitulo4():
     capitulo422_111.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    elevacion_micro = ElevacionMicrocuenca.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'altitud'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in elevacion_micro:
+        rango = fila.altitud  # ej: '1500-1600'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[rango]['superficie'] += superficie
+        agrupados[rango]['km2'] += km2
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for rango, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'rango': rango,
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    resultado.sort(key=lambda x: int(x['rango'].split('-')[0].strip()))
+    
+    maxima_km2 = max(item['km2'] for item in resultado)
+    elevacion_maxima = next(item['rango'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    elevacion_minima = next(item['rango'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+        
+    print(f'\nComo podemos observar en la tabla de las pendientes de mayor dominancia son elevaciones de {elevacion_maxima} con {round(porcentaje_maximo, 3)}%, mientras que las menos dominantes son las que vas de {elevacion_minima} msnm, sin embargo, las elevaciones oscilan entre ______ msnm. (Ver anexo Mapa 4.18.- Elevaciones del SA).')
+
+    #########################
     ### Descripcion del capitulo 4.2.2.11.1 ###
     #########################
     di422_111 = doc.add_paragraph()
-    descripcionCapitulo422_111 = di422_111.add_run('Como podemos observar en la tabla de las pendientes de mayor dominancia son elevaciones de ____________________, mientras que las menos dominantes son las que vas de _____________________________________________________________________________. (Ver anexo Mapa 4.18.- Elevaciones del SA).')
+    descripcionCapitulo422_111 = di422_111.add_run(f'Como podemos observar en la tabla de las pendientes de mayor dominancia son elevaciones de {elevacion_maxima} con {round(porcentaje_maximo, 3)}%, mientras que las menos dominantes son las que vas de {elevacion_minima} msnm, sin embargo, las elevaciones oscilan entre ______ msnm. (Ver anexo Mapa 4.18.- Elevaciones del SA).')
     descripcionCapitulo422_111_format = di422_111.paragraph_format
     descripcionCapitulo422_111_format.line_spacing = 1.15
     descripcionCapitulo422_111_format.space_after = 0
@@ -3944,20 +4174,61 @@ def capitulo4():
     #########################
     ### Tabla del capitulo 4.2.2.11.1 ###
     #########################
+    encabezados = [
+        'Elevaciones',
+        'Superficie',
+        'Km\u00B2',
+        'Porcentaje',
+    ]
 
-    tabla422_111 = doc.add_table(cols=4, rows=15, style='Table Grid')
+    elevacion_micro = ElevacionMicrocuenca.objects.filter(
+        nom_micro='24-103-01-002'
+    )
 
-    for cols in range(4):
-        for rows in range(15):
-            cell = tabla422_111.cell(rows, cols)
-            t422_111 = cell.paragraphs[0].add_run(' ')
-            t422_111.font.size = Pt(12)
-            t422_111.font.name = 'Arial'
-            cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-            cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+    tabla422_111 = doc.add_table(cols=len(encabezados), rows=len(resultado) + 2, style='Table Grid')
 
-        cell = tabla422_111.cell(0, cols)
+    for i, cols in enumerate(encabezados):
+        cell = tabla422_111.cell(0, i)
+        t422_111 = cell.paragraphs[0].add_run(cols)
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
         cell_background_color(cell, '4F81BD')
+
+    for item in resultado:
+        print(f"\nRango: {item['rango']}, Superficie: {item['superficie']}, km2: {item['km2']}, % superficie: {item['porcentaje_superficie']:.2f}%, % km2: {item['porcentaje_km2']:.2f}%")
+
+    for i, filas in enumerate(resultado):
+        cell = tabla422_111.cell(i + 1, 0)
+        t422_111 = cell.paragraphs[0].add_run(filas['rango'])
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla422_111.cell(i + 1, 2)
+        t422_111 = cell.paragraphs[0].add_run(f'{filas['km2']:.2f}')
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        superficie = filas['km2'] * 100
+
+        cell = tabla422_111.cell(i + 1, 1)
+        t422_111 = cell.paragraphs[0].add_run(f'{superficie:.4f}')
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla422_111.cell(i + 1, 3)
+        t422_111 = cell.paragraphs[0].add_run(f"{filas['porcentaje_km2']:.2f}%")
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
 
     ########################################################################################################################################################################
     # Capitulo 4.2.2.11.2
@@ -3977,10 +4248,129 @@ def capitulo4():
     capitulo422_112.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Pendiente Micro
+        *******************************
+    """
+    pendiente_micro = PendienteMicro.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in pendiente_micro:
+        porcentajes = fila.porcentaje
+        rango = fila.grados  # ej: '4° - 9°'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[rango]['superficie'] += superficie
+        agrupados[rango]['km2'] += km2
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for rango, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'porcentajes': porcentajes,
+            'rango': rango,
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    grados_maxima = next(item['rango'] for item in resultado if item['km2'] == maxima_km2)
+    grados_porcentaje_max = next(item['porcentajes'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    grados_minima = next(item['rango'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    """
+        *******************************
+            Tabla de Topoformas
+        *******************************
+    """
+    topoforma_micro = TipoTopografia.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'Tipo de Topoforma'
+    agrupados_topoforma = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in topoforma_micro:
+        rango = fila.tipo  # ej: 'Llanuras'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[rango]['superficie'] += superficie
+        agrupados[rango]['km2'] += km2
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado_topoforma = []
+    for rango, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado_topoforma.append({
+            'rango': rango,
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+    
+    # Devuelve el resultado
+    topoforma_maxima_km2 = max(item['km2'] for item in resultado_topoforma)
+    topoforma_tipo_maxima = next(item['rango'] for item in resultado_topoforma if item['km2'] == topoforma_maxima_km2)
+    topoforma_porcentajes_maximo = next(item['porcentaje_km2'] for item in resultado_topoforma if item['km2'] == topoforma_maxima_km2)
+
+    topoforma_minima_km2 = min(item['km2'] for item in resultado_topoforma)
+    topoforma_tipo_minima = next(item['rango'] for item in resultado_topoforma if item['km2'] == topoforma_maxima_km2)
+    topoforma_porcentajes_minimo = next(item['porcentaje_km2'] for item in resultado_topoforma if item['km2'] == topoforma_maxima_km2)
+
+    # Imprime el resultado y se inserta en texto (es una prueba)
+    print(f'\nEl Sistema Ambiental se encuentra en una topoforma de mayoría {topoforma_tipo_maxima}, donde las pendientes que predominan son {grados_maxima} son de {grados_porcentaje_max}%, lo cual equivale a un {round(porcentaje_maximo, 2)}%, siendo la pendiente de mayor dominancia las ____° (Ver anexo Mapa 4.19.- Pendientes del SA), a continuación, se presenta en la siguiente tabla.')
+
+    #########################
     ### Descripcion del capitulo 4.2.2.11.2 ###
     #########################
     di422_112 = doc.add_paragraph()
-    descripcionCapitulo422_112 = di422_112.add_run('El Sistema Ambiental se encuentra en una topoforma de mayoría _______________________________________________________, (Ver anexo Mapa 4.19.- Pendientes del SA), a continuación, se presenta en la siguiente tabla.')
+    descripcionCapitulo422_112 = di422_112.add_run(f'\nEl Sistema Ambiental se encuentra en una topoforma de mayoría {topoforma_tipo_maxima}, donde las pendientes que predominan son {grados_maxima} son de {grados_porcentaje_max}%, lo cual equivale a un {round(porcentaje_maximo, 2)}%, siendo la pendiente de mayor dominancia las ____° (Ver anexo Mapa 4.19.- Pendientes del SA), a continuación, se presenta en la siguiente tabla.')
     descripcionCapitulo422_112_format = di422_112.paragraph_format
     descripcionCapitulo422_112_format.line_spacing = 1.15
     descripcionCapitulo422_112_format.space_after = 0
@@ -4007,19 +4397,63 @@ def capitulo4():
     ### Tabla del capitulo 4.2.2.11.2 ###
     #########################
 
-    tabla422_112 = doc.add_table(cols=4, rows=15, style='Table Grid')
+    encabezados = [
+        'Grados',
+        'Porciento',
+        'Superficie (ha)',
+        'Km\u00B2',
+        'Porcentajes',
+    ]
 
-    for cols in range(4):
-        for rows in range(15):
-            cell = tabla422_112.cell(rows, cols)
-            t422_112 = cell.paragraphs[0].add_run(' ')
-            t422_112.font.size = Pt(12)
-            t422_112.font.name = 'Arial'
-            cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-            cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+    tabla422_111 = doc.add_table(cols=len(encabezados), rows=len(resultado) + 2, style='Table Grid')
 
-        cell = tabla422_112.cell(0, cols)
+    for i, cols in enumerate(encabezados):
+        cell = tabla422_111.cell(0, i)
+        t422_111 = cell.paragraphs[0].add_run(cols)
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
         cell_background_color(cell, '4F81BD')
+
+    for item in resultado:
+        print(f"\nRango: {item['rango']}, Superficie: {item['superficie']}, km2: {item['km2']}, % superficie: {item['porcentaje_superficie']:.2f}%, % km2: {item['porcentaje_km2']:.2f}%")
+
+    for i, filas in enumerate(resultado):
+        cell = tabla422_111.cell(i + 1, 0)
+        t422_111 = cell.paragraphs[0].add_run(filas['rango'])
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla422_111.cell(i + 1, 1)
+        t422_111 = cell.paragraphs[0].add_run(f'{filas['porcentajes']}')
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla422_111.cell(i + 1, 2)
+        t422_111 = cell.paragraphs[0].add_run(f'{filas['superficie']:.2f}')
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla422_111.cell(i + 1, 3)
+        t422_111 = cell.paragraphs[0].add_run(f"{filas['km2']:.2f}%")
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla422_111.cell(i + 1, 4)
+        t422_111 = cell.paragraphs[0].add_run(f"{filas['porcentaje_km2']:.2f}%")
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
     
     ########################################################################################################################################################################
     # Capitulo 4.2.2.11.3
@@ -4039,10 +4473,86 @@ def capitulo4():
     capitulo422_113.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Exposiciones Microcuenca
+        *******************************
+    """
+    exposicion_micro = ExposicionMicro.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in exposicion_micro:
+        exposicion = fila.exposicion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[exposicion]['superficie'] += superficie
+        agrupados[exposicion]['km2'] += km2
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for exposicion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'exposicion': exposicion,
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    exposicion_maxima = next(item['exposicion'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    exposicion_minima = next(item['exposicion'] for item in resultado if item['km2'] == minima_km2)
+    exposicion_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_exposicion = segundo['exposicion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_exposicion = "N/A"
+        segundo_porcentaje = 0
+
+    # Muestra el resultado en la consola (prueba)
+    print(f'Para el caso de la exposición en el sistema ambiental, la más abundantes y por las características de las mismas podemos encontrar en mayor proporción la exposición {exposicion_maxima} con {porcentaje_maximo:.2f}%, seguida de la exposicion {segundo_exposicion} con {segundo_porcentaje:.2f}% siendo exposicion {exposicion_minima} de la menor dominancia, (Ver anexo Mapa 4.20.- Exposición), como se muestra en la siguiente tabla.')
+
+    #########################
     ### Descripcion del capitulo 4.2.2.11.3 ###
     #########################
     di422_113 = doc.add_paragraph()
-    descripcionCapitulo422_113 = di422_113.add_run('Para el caso de la exposición en el sistema ambiental, la más abundantes y por las características de las mismas podemos encontrar en mayor proporción la exposición _________________________________________, (Ver anexo Mapa 4.20.- Exposición), como se muestra en la siguiente tabla.')
+    descripcionCapitulo422_113 = di422_113.add_run(f'Para el caso de la exposición en el sistema ambiental, la más abundantes y por las características de las mismas podemos encontrar en mayor proporción la exposición {exposicion_maxima.capitalize()} con {porcentaje_maximo:.2f}%, seguida de la exposicion {segundo_exposicion.capitalize()} con {segundo_porcentaje:.2f}% siendo exposicion {exposicion_minima.capitalize()} de la menor dominancia, (Ver anexo Mapa 4.20.- Exposición), como se muestra en la siguiente tabla.')
     descripcionCapitulo422_113_format = di422_113.paragraph_format
     descripcionCapitulo422_113_format.line_spacing = 1.15
     descripcionCapitulo422_113_format.space_after = 0
@@ -4069,19 +4579,55 @@ def capitulo4():
     ### Tabla del capitulo 4.2.2.11.3 ###
     #########################
 
-    tabla422_113 = doc.add_table(cols=4, rows=7, style='Table Grid')
+    encabezados = [
+        'Exposicion',
+        'Superficie (ha)',
+        'Km\u00B2',
+        'Porcentajes',
+    ]
 
-    for cols in range(4):
-        for rows in range(7):
-            cell = tabla422_113.cell(rows, cols)
-            t422_113 = cell.paragraphs[0].add_run(' ')
-            t422_113.font.size = Pt(12)
-            t422_113.font.name = 'Arial'
-            cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-            cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+    tabla422_111 = doc.add_table(cols=len(encabezados), rows=len(resultado) + 2, style='Table Grid')
 
-        cell = tabla422_113.cell(0, cols)
+    for i, cols in enumerate(encabezados):
+        cell = tabla422_111.cell(0, i)
+        t422_111 = cell.paragraphs[0].add_run(cols)
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
         cell_background_color(cell, '4F81BD')
+
+    for item in resultado:
+        print(f"\nRango: {item['exposicion']}, Superficie: {item['superficie']}, km2: {item['km2']}, % superficie: {item['porcentaje_superficie']:.2f}%, % km2: {item['porcentaje_km2']:.2f}%")
+
+    for i, filas in enumerate(resultado):
+        cell = tabla422_111.cell(i + 1, 0)
+        t422_111 = cell.paragraphs[0].add_run(filas['exposicion'])
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla422_111.cell(i + 1, 1)
+        t422_111 = cell.paragraphs[0].add_run(f'{filas['superficie']:.2f}')
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla422_111.cell(i + 1, 2)
+        t422_111 = cell.paragraphs[0].add_run(f"{filas['km2']:.2f}%")
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla422_111.cell(i + 1, 3)
+        t422_111 = cell.paragraphs[0].add_run(f"{filas['porcentaje_km2']:.2f}%")
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
 
     ########################################################################################################################################################################
     # Capitulo 4.2.2.11.4
@@ -4115,6 +4661,18 @@ def capitulo4():
     di422_114.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Toponimias
+        *******************************
+    """
+    topominos_micro = TopominosMicro.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    #########################
     ### Titulo de la tabla del capitulo 4.2.2.11.4 ###
     #########################
     tituloTabla422_114 = doc.add_paragraph()
@@ -4131,19 +4689,46 @@ def capitulo4():
     ### Tabla del capitulo 4.2.2.11.4 ###
     #########################
 
-    tabla422_114 = doc.add_table(cols=3, rows=15, style='Table Grid')
+    encabezados = [
+        'Municipio',
+        'Nombre',
+        'Tipo',
+    ]
 
-    for cols in range(3):
-        for rows in range(7):
-            cell = tabla422_114.cell(rows, cols)
-            t422_114 = cell.paragraphs[0].add_run(' ')
-            t422_114.font.size = Pt(12)
-            t422_114.font.name = 'Arial'
-            cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-            cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+    tabla422_111 = doc.add_table(cols=len(encabezados), rows=len(topominos_micro) + 1, style='Table Grid')
 
-        cell = tabla422_114.cell(0, cols)
+    for i, cols in enumerate(encabezados):
+        cell = tabla422_111.cell(0, i)
+        t422_111 = cell.paragraphs[0].add_run(cols)
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
         cell_background_color(cell, '4F81BD')
+
+    for i, filas in enumerate(topominos_micro):
+        municipio = re.sub(r"\s*\([^)]*\)", "", filas.municipio)
+
+        cell = tabla422_111.cell(i + 1, 0)
+        t422_111 = cell.paragraphs[0].add_run(municipio.capitalize())
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla422_111.cell(i + 1, 1)
+        t422_111 = cell.paragraphs[0].add_run(f'{filas.nombre.title()}')
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla422_111.cell(i + 1, 2)
+        t422_111 = cell.paragraphs[0].add_run(f"{filas.terminos_ge}")
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
 
     ########################################################################################################################################################################
     # Capitulo 4.2.2.12
@@ -4166,7 +4751,7 @@ def capitulo4():
     ### Descripcion del capitulo 4.2.2.12 ###
     #########################
     di422_12 = doc.add_paragraph()
-    descripcionCapitulo422_12 = di422_12.add_run('El sistema ambiental objeto del presente estudio se localiza dentro de la Subcuenca .... Descripcion del Capitulo 4.2.2.12 ...... (Ver anexo Mapa 4.22.- Geohidrología del sistema ambiental).')
+    descripcionCapitulo422_12 = di422_12.add_run('El sistema ambiental objeto del presente estudio se localiza dentro de la Subcuenca .... Describir el resto del capitulo, Motivo: No hay claridad de datos ...... (Ver anexo Mapa 4.22.- Geohidrología del sistema ambiental).')
     descripcionCapitulo422_12_format = di422_12.paragraph_format
     descripcionCapitulo422_12_format.line_spacing = 1.15
     descripcionCapitulo422_12_format.space_after = 0
@@ -4180,7 +4765,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.2.12 ###
     #########################
     tituloTabla422_12 = doc.add_paragraph()
-    dti422_12 = tituloTabla422_12.add_run('\nTabla 4.19.-	Geohidrología presente en el Sistema Ambiental.')
+    dti422_12 = tituloTabla422_12.add_run('\nTabla 4.19.- Geohidrología presente en el Sistema Ambiental.')
     dti422_12_format = tituloTabla422_12.paragraph_format
     dti422_12_format.line_spacing = 1.15
     dti422_12_format.space_after = 0
@@ -4215,7 +4800,7 @@ def capitulo4():
     ### Titulo del capitulo 4.2.2.12.1 ###
     #########################
     capitulo422_121 = doc.add_paragraph()
-    i422_121 = capitulo422_121.add_run(f'\n{temasCapitulo4[1][2][2][16][0]}')
+    i422_121 = capitulo422_121.add_run(f'\nDescribir el acuifero que se encuentra en el sistema ambiental')
     i422_121_format = capitulo422_121.paragraph_format
     i422_121_format.line_spacing = 1.15
 
@@ -4228,7 +4813,7 @@ def capitulo4():
     ### Descripcion del capitulo 4.2.2.12.1 ###
     #########################
     di422_121 = doc.add_paragraph()
-    descripcionCapitulo422_121 = di422_121.add_run('Descripción del capitulo 4.2.2.12.1')
+    descripcionCapitulo422_121 = di422_121.add_run('Describir el acuifero que se encuentra en el sistema ambiental, Motivo: No hay claridad de datos')
     descripcionCapitulo422_121_format = di422_121.paragraph_format
     descripcionCapitulo422_121_format.line_spacing = 1.15
     descripcionCapitulo422_121_format.space_after = 0
@@ -4242,7 +4827,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.2.12.1 ###
     #########################
     tituloTabla422_121 = doc.add_paragraph()
-    dti422_121 = tituloTabla422_121.add_run('\nTabla 4.X.-	Geohidrología presente en el Sistema Ambiental.')
+    dti422_121 = tituloTabla422_121.add_run('\nTabla 4.X.- Disponibilidad de Agua Subterranea.')
     dti422_121_format = tituloTabla422_121.paragraph_format
     dti422_121_format.line_spacing = 1.15
     dti422_121_format.space_after = 0
@@ -4541,7 +5126,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(8.71), height=Cm(10.16))
     imagenCapitulo4.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     #########################
@@ -4864,10 +5449,92 @@ def capitulo4():
     capitulo4231.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+
+    # Muestra el resultado en la consola (prueba)
+    print(f'La vegetación dominante que se encontró en el Sistema Ambiental es el {vegetacion_maxima} ({codigo_maxima}), seguido del {segundo_vegetacion} ({segundo_codigo}), sobre los tipos de vegetación natural ya que esta área se encuentra en su mayoría sobre planicies, seguido por áreas montañosas, en estos casos alternan comunidades dominadas por gramíneas, conocidos como Pastizales, siendo de varios tipos de acuerdo a las especies que se presentan sin embargo, en general dominan los arbustos xéricos, esparcidos, perennes y elementos efímeros, donde las variaciones en el suelo y el micro relieve, son las causantes en determinar las asociaciones vegetales.')
+
+    #########################
     ### Descripcion del capitulo 4.2.3.1 ###
     #########################
     di4231 = doc.add_paragraph()
-    descripcionCapitulo4231 = di4231.add_run('Según Rzedowski (1978) ... ... ... ... .. . . . . . . Descripcion.')
+    descripcionCapitulo4231 = di4231.add_run('Según Rzedowski (1978) el área de estudio forma parte de la Región de Matorral Xerófilo, el cual se extiende a grandes extensiones del Norte del país caracterizado por su clima árido y semiárido abarcando toda la superficie del área de estudio.')
     descripcionCapitulo4231_format = di4231.paragraph_format
     descripcionCapitulo4231_format.line_spacing = 1.15
     descripcionCapitulo4231_format.space_after = 0
@@ -4878,7 +5545,7 @@ def capitulo4():
 
     di4231.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     di4231 = doc.add_paragraph()
-    descripcionCapitulo4231 = di4231.add_run('Los elementos integrantes de los recursos básicos. Los cambios en la cobertura y uso del suelo afectan los sistemas globales (por ejemplo atmósfera, clima y nivel del mar), dichos cambios ocurren en un modo localizado que en su conjunto llegan a sumar un total significativo y se reflejan en buena medida en la cobertura vegetal, razón por la cual se toman como referencia para algunas aplicaciones que van desde el monitoreo ambiental, la producción de estadísticas como apoyo en la planeación, evaluación del cambio climático y la evaluación de los procesos de desertificación, entre otros. ')
+    descripcionCapitulo4231 = di4231.add_run(f'La vegetación dominante que se encontró en el Sistema Ambiental es el {vegetacion_maxima}, seguido del {segundo_vegetacion}, sobre los tipos de vegetación natural ya que esta área se encuentra en su mayoría sobre planicies, seguido por áreas montañosas, en estos casos alternan comunidades dominadas por gramíneas, conocidos como Pastizales, siendo de varios tipos de acuerdo a las especies que se presentan sin embargo, en general dominan los arbustos xéricos, esparcidos, perennes y elementos efímeros, donde las variaciones en el suelo y el micro relieve, son las causantes en determinar las asociaciones vegetales.')
     descripcionCapitulo4231_format = di4231.paragraph_format
     descripcionCapitulo4231_format.line_spacing = 1.15
     descripcionCapitulo4231_format.space_after = 0
@@ -4901,6 +5568,17 @@ def capitulo4():
 
     di4231 = doc.add_paragraph()
     descripcionCapitulo4231 = di4231.add_run('Las Comunidades vegetales que se desarrollan en el sistema ambiental se clasificaron con base al criterio de Henrickson y Johnston (1983), por lo cual ... ... ... ... ... Descripcion ... ... ... ... ..... .')
+    descripcionCapitulo4231_format = di4231.paragraph_format
+    descripcionCapitulo4231_format.line_spacing = 1.15
+    descripcionCapitulo4231_format.space_after = 0
+    descripcionCapitulo4231_format.space_before = 0
+
+    descripcionCapitulo4231.font.name = 'Arial'
+    descripcionCapitulo4231.font.size = Pt(12)
+    di4231.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di4231 = doc.add_paragraph()
+    descripcionCapitulo4231 = di4231.add_run(f'El {vegetacion_maxima} con distribución en el Sistema Ambiental del {porcentaje_maximo:.2f}% Se caracteriza por la abundancia de individuos de especies con hojas gruesas y alargadas, a veces espinosas o bien inermes pero fibrosas, dispuestas en roseta, frecuentemente forma colonias mediante rizomas, se pueden encontrar especies tales como: Agave lechuguilla (lechuguilla), Opuntia sp (nopal), Opuntia engelmannii (Nopal engelmannii), Yucca sp ( yuca), Hechtia glomerata (guapilla), Fouquieria splendens (ocotillo), Euphorbia antisyphillitica (candelilla) por mencionar algunas de las especies más representativas de este tipo de vegetación, las cuales crecen principalmente en suelo someros, este tipo de matorral se localiza en las partes bajas de las sierras con frecuencia. ')
     descripcionCapitulo4231_format = di4231.paragraph_format
     descripcionCapitulo4231_format.line_spacing = 1.15
     descripcionCapitulo4231_format.space_after = 0
@@ -4934,20 +5612,67 @@ def capitulo4():
     dti4231.font.size = Pt(12)
     tituloTabla4231.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-     #########################
+    #########################
     ### Tabla del capitulo 4.2.3.1 ###
     #########################
-    tabla4231 = doc.add_table(rows=6, cols=5, style='Table Grid')
+    encabezados = [
+        'Tipo',
+        'Clave',
+        'Superficie',
+        'km2',
+        'Porcentaje',
+    ]
 
-    for cols in range(5):
-        cell = tabla4231.cell(0, cols)
-        cell_background_color(cell, '0070C0')
+    tabla422_111 = doc.add_table(cols=len(encabezados), rows=len(resultado) + 1, style='Table Grid')
 
-        for rows in range(6):
-            cell = tabla4231.cell(rows, cols)
-            t4231 = cell.paragraphs[0].add_run(' ')
-            t4231.font.size = Pt(12)
-            t4231.font.name = 'Arial'
+    for i, cols in enumerate(encabezados):
+        cell = tabla422_111.cell(0, i)
+        t422_111 = cell.paragraphs[0].add_run(cols)
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+        cell_background_color(cell, '4F81BD')
+
+    for i, filas in enumerate(resultado):
+
+        cell = tabla422_111.cell(i + 1, 0)
+        t422_111 = cell.paragraphs[0].add_run(filas['vegetacion'])
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla422_111.cell(i + 1, 1)
+        t422_111 = cell.paragraphs[0].add_run(f'{filas['codigo']}')
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla422_111.cell(i + 1, 3)
+        t422_111 = cell.paragraphs[0].add_run(f"{filas['km2']:.2f}")
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        km2 = filas['km2']
+        superficie = km2 * 100
+
+        cell = tabla422_111.cell(i + 1, 2)
+        t422_111 = cell.paragraphs[0].add_run(f"{superficie:.2f}")
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla422_111.cell(i + 1, 4)
+        t422_111 = cell.paragraphs[0].add_run(f"{filas['porcentaje_km2']:.2f}%")
+        t422_111.font.size = Pt(12)
+        t422_111.font.name = 'Arial'
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.paragraphs[0].alignment = WD_ALIGN_VERTICAL.CENTER
 
     #########################
     ### Descripcion del capitulo 4.2.3.1 ###
@@ -4977,10 +5702,89 @@ def capitulo4():
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+
+    #########################
     ### Titulo del capitulo 4.2.3.2 ###
     #########################
     capitulo4232 = doc.add_paragraph()
-    i4232 = capitulo4232.add_run(f'\n{temasCapitulo4[1][2][4][1]}')
+    i4232 = capitulo4232.add_run(f'\nIV.2.3.2.- Análisis de la vegetación {vegetacion_maxima.title()} ({codigo_maxima})')
     i4232_format = capitulo4232.paragraph_format
     i4232_format.line_spacing = 1.5
 
@@ -5004,6 +5808,20 @@ def capitulo4():
     di4232.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    vegetacion_global = codigo_maxima.upper()
+
+    """
+        *******************************
+            Tabla de Especies de Vegetacion
+        *******************************
+    """
+    especies_vegetacion = EspeciesVegetacion.objects.filter(
+        codigo_veg = vegetacion_global
+    )
+
+    #########################
     ### Titulo de la tabla del capitulo 4.2.3.2 ###
     #########################
     tituloTabla4232 = doc.add_paragraph()
@@ -5016,30 +5834,164 @@ def capitulo4():
     dti4232.font.size = Pt(12)
     tituloTabla4232.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-     #########################
+    #########################
     ### Tabla del capitulo 4.2.3.2 ###
     #########################
-    tabla4232 = doc.add_table(rows=40, cols=5, style='Table Grid')
+    encabezados = [
+        'Estrato',
+        'Familia',
+        'Nombre Cientifico',
+        'Nombre Comun',
+        'Estatus NOM-059 SEMARNAT 2010',
+    ]
 
-    for cols in range(5):
-        cell = tabla4232.cell(0, cols)
+    tabla4232 = doc.add_table(rows=len(especies_vegetacion) + 2, cols=len(encabezados), style='Table Grid')
+
+    for i, cols in enumerate(encabezados):
+        cell = tabla4232.cell(0, i)
+        t4232 = cell.paragraphs[0].add_run(cols)
+        t4232.font.size = Pt(12)
+        t4232.font.name = 'Arial'
         cell_background_color(cell, '0070C0')
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
 
-        for rows in range(40):
-            cell = tabla4232.cell(rows, cols)
-            t4232 = cell.paragraphs[0].add_run(' ')
-            t4232.font.size = Pt(12)
-            t4232.font.name = 'Arial'
+
+    for i, filas in enumerate(especies_vegetacion):
+        cell = tabla4232.cell(i + 1, 1)
+        t4232 = cell.paragraphs[0].add_run(filas.familia)
+        t4232.font.size = Pt(12)
+        t4232.font.name = 'Arial'
+        #cell_background_color(cell, '0070C0')
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla4232.cell(i + 1, 2)
+        t4232 = cell.paragraphs[0].add_run(filas.nom_cientifico)
+        t4232.font.size = Pt(12)
+        t4232.font.name = 'Arial'
+        #cell_background_color(cell, '0070C0')
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla4232.cell(i + 1, 3)
+        t4232 = cell.paragraphs[0].add_run(filas.nombre_comun)
+        t4232.font.size = Pt(12)
+        t4232.font.name = 'Arial'
+        #cell_background_color(cell, '0070C0')
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla4232.cell(i + 1, 4)
+        t4232 = cell.paragraphs[0].add_run(filas.status)
+        t4232.font.size = Pt(12)
+        t4232.font.name = 'Arial'
+        #cell_background_color(cell, '0070C0')
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+    # ✅ Celdas fusionadas
+    #celda_fusionada = len(especies_vegetacion) + 2  # +2 porque starts from 0 (encabezado + datos + esta fila total)
+    row = tabla4232.add_row()
+
+    # Fusionar columna 0 y 1
+    merged_cell = row.cells[0].merge(row.cells[4])
+
+    # Agregar texto a la celda fusionada
+    t4232 = merged_cell.paragraphs[0].add_run('A = Amenazada, P = En peligro de extinción, Pr.- Protección especial, Sc. - Sin categoría')
+    t4232.font.name = 'Arial'
+    t4232.font.size = Pt(12)
+    t4232.bold = True
+    merged_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     ########################################################################################################################################################################
     # Capitulo 4.2.3.3
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+
+    #########################
     ### Titulo del capitulo 4.2.3.3 ###
     #########################
     capitulo4233 = doc.add_paragraph()
-    i4233 = capitulo4233.add_run(f'\n{temasCapitulo4[1][2][4][2]}')
+    i4233 = capitulo4233.add_run(f'\nIV.2.3.3.- Muestreo de la vegetación {vegetacion_maxima} y {segundo_vegetacion} en el Sistema Ambiental.')
     i4233_format = capitulo4233.paragraph_format
     i4233_format.line_spacing = 1.15
 
@@ -5064,7 +6016,7 @@ def capitulo4():
     di4233.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     di4233 = doc.add_paragraph()
-    descripcionCapitulo4233 = di4233.add_run('\nPara realizar el muestreo dentro del sistema ambiental y realizar un comparativo de los tipos de vegetación existentes en Sistema Ambiental, así como la diversidad de las especies, para ello se realizó el muestreo con base al tipo de vegetación que se encuentran existentes en el sistema ambiental, __________________________________________. Con el objeto de que la información fuera confiable en la toma de datos en campo, se realizó un sistema de muestreo aleatorio y lo más cercano al área de cambio de uso de suelo y en donde no presentara disturbios en los estratos. Con respeto a la forma y tamaño de los sitios de muestreo se utilizó de forma circular con un radio de 17.84 m., en una superficie de 1,000 m2 esto para el estrato arbóreo, para los estratos arbustivo, y suculento fue con un radio de 8.92 m en una superficie de 250 m2 mientras que, para las herbácea y gramíneas, el muestreo fue de 1 m2 cuadrado, quedando en el centro del sitio. ')
+    descripcionCapitulo4233 = di4233.add_run(f'\nPara realizar el muestreo dentro del sistema ambiental y realizar un comparativo de los tipos de vegetación existentes en Sistema Ambiental, así como la diversidad de las especies, para ello se realizó el muestreo con base al tipo de vegetación que se encuentran existentes en el sistema ambiental, siendo ___ sitios de muestreo de la vegetacion {vegetacion_maxima} ({codigo_maxima}) y ____ sitios en la vegetacion {segundo_vegetacion} ({segundo_codigo}), las características que manifiestan las asociaciones vegetativas  en lo referente a la cobertura y distribución así como la asociación, las especies que dominan son las del tipo de {vegetacion_maxima}, seguido por el {segundo_vegetacion}. La distribución vegetativa que corresponde a este tipo de vegetación antes mencionado, encontrándose en el estrato arbóreo, ________________________, en el estrato arbustivo la más dominante fue ______________, en cuanto al estrato gramineo, se encontró ___________, como las mas abundante, en el estrato de las herbáceas se encontro como las más abundante la especie de ______________________ y para el estrato de las suculentas, la más abundante fue, _________________, etc; asociado con otras especies de menor frecuencia en las áreas. Con el objeto de que la información fuera confiable en la toma de datos en campo, se realizó un sistema de muestreo aleatorio y lo más cercano al área de cambio de uso de suelo y en donde no presentara disturbios en los estratos. Con respeto a la forma y tamaño de los sitios de muestreo se utilizó de forma circular con un radio de 17.84 m., en una superficie de 1,000 m2 esto para el estrato arbóreo, para los estratos arbustivo, y suculento fue con un radio de 8.92 m en una superficie de 250 m2 mientras que, para las herbácea y gramíneas, el muestreo fue de 1 m2 cuadrado, quedando en el centro del sitio. ')
     descripcionCapitulo4233_format = di4233.paragraph_format
     descripcionCapitulo4233_format.line_spacing = 1.15
     descripcionCapitulo4233_format.space_after = 0
@@ -5088,7 +6040,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(6.89), height=Cm(5.67))
     imagenCapitulo4.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     #########################
@@ -5122,7 +6074,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.3 ###
     #########################
     tituloTabla4233 = doc.add_paragraph()
-    dti4233 = tituloTabla4233.add_run('\nTabla 4.x.- Coordenadas greográficas de sitios de muestreo del ___')
+    dti4233 = tituloTabla4233.add_run(f'\nTabla 4.x.- Coordenadas greográficas de sitios de muestreo del {codigo_maxima}')
     dti4233_format = tituloTabla4233.paragraph_format
     dti4233_format.line_spacing = 1.15
     dti4233_format.space_after = 0
@@ -5134,27 +6086,148 @@ def capitulo4():
      #########################
     ### Tabla del capitulo 4.2.3.3 ###
     #########################
-    tabla4233 = doc.add_table(rows=40, cols=6, style='Table Grid')
+    encabezados1 = [
+        'No.',
+        'Sitio',
+        'X',
+        'Y',
+        'Longitud W',
+        'Latitud N',
+    ]
+
+    tabla4233 = doc.add_table(rows=15, cols=len(encabezados1), style='Table Grid')
 
     for cols in range(6):
-        cell = tabla4233.cell(0, cols)
+        cell = tabla4233.cell(1, cols)
+        t4233 = cell.paragraphs[0].add_run(encabezados1[cols])
+        t4233.font.size = Pt(12)
+        t4233.font.name = 'Arial'
         cell_background_color(cell, '0070C0')
 
-        for rows in range(40):
+        for rows in range(15):
             cell = tabla4233.cell(rows, cols)
             t4233 = cell.paragraphs[0].add_run(' ')
             t4233.font.size = Pt(12)
             t4233.font.name = 'Arial'
+
+    # ✅ Celda fusionadas (Vertical)
+    cell_top = tabla4233.cell(0, 0)
+    cell_bottom = tabla4233.cell(1, 0)
+
+    merged_cell = cell_top.merge(cell_bottom)
+    merged_cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    merged_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # Agregar texto (opcional)
+    paragraph = merged_cell.paragraphs[0]
+    t4233 = paragraph.add_run('')
+    t4233.font.name = 'Arial'
+    t4233.bold = True
+    t4233.font.size = Pt(12)
+
+    # ✅ Celda fusionadas (Vertical)
+    cell_top = tabla4233.cell(0, 1)
+    cell_bottom = tabla4233.cell(1, 1)
+
+    merged_cell = cell_top.merge(cell_bottom)
+    merged_cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    merged_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # Agregar texto (opcional)
+    paragraph = merged_cell.paragraphs[0]
+    t4233 = paragraph.add_run('')
+    t4233.font.name = 'Arial'
+    t4233.bold = True
+    t4233.font.size = Pt(12)
 
     ########################################################################################################################################################################
     # Capitulo 4.2.3.3.1
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+
+    #########################
     ### Titulo del capitulo 4.2.3.3.1 ###
     #########################
     capitulo42331 = doc.add_paragraph()
-    i42331 = capitulo42331.add_run(f'\n{temasCapitulo4[1][2][4][3][0]}')
+    i42331 = capitulo42331.add_run(f'\nIV.2.3.3.1- Resultados de los sitios de muestreo del {vegetacion_maxima} en el Sistema Ambiental.')
     i42331_format = capitulo42331.paragraph_format
     i42331_format.line_spacing = 1.15
 
@@ -5182,7 +6255,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.3.1 ###
     #########################
     tituloTabla4233 = doc.add_paragraph()
-    dti4233 = tituloTabla4233.add_run('\nTabla 4.x.- Coordenadas greográficas de sitios de muestreo del ___')
+    dti4233 = tituloTabla4233.add_run(f'\nTabla 4.x.- Coordenadas greográficas de sitios de muestreo del {vegetacion_maxima}')
     dti4233_format = tituloTabla4233.paragraph_format
     dti4233_format.line_spacing = 1.15
     dti4233_format.space_after = 0
@@ -5194,16 +6267,29 @@ def capitulo4():
     #########################
     ### Tabla del capitulo 4.2.3.3.1 ###
     #########################
-    tabla42331 = doc.add_table(rows=40, cols=9, style='Table Grid')
+    encabezados = [
+        'Sitio',
+        'Estrato',
+        'Familia',
+        'Nombre Cientifico',
+        'Nombre Comun',
+        'Individuos',
+        'Cobertura',
+        'Altura',
+        'DB',
+    ]
+    tabla42331 = doc.add_table(rows=15, cols=len(encabezados), style='Table Grid')
 
-    for cols in range(9):
-        cell = tabla42331.cell(0, cols)
-        cell_background_color(cell, '0070C0')
+    for i, cols in enumerate(encabezados):
+        cell = tabla42331.cell(0, i)
+        t42331 = cell.paragraphs[0].add_run(f'{cols}')
+        t42331.font.size = Pt(10)
+        t42331.font.name = 'Arial'
 
-        for rows in range(40):
-            cell = tabla42331.cell(rows, cols)
+        for rows in range(15):
+            cell = tabla42331.cell(rows, i)
             t42331 = cell.paragraphs[0].add_run(' ')
-            t42331.font.size = Pt(12)
+            t42331.font.size = Pt(10)
             t42331.font.name = 'Arial'
 
     ########################################################################################################################################################################
@@ -5211,10 +6297,89 @@ def capitulo4():
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+
+    #########################
     ### Titulo del capitulo 4.2.3.4 ###
     #########################
     capitulo4234 = doc.add_paragraph()
-    i4234 = capitulo4234.add_run(f'\n{temasCapitulo4[1][2][4][4]}')
+    i4234 = capitulo4234.add_run(f'\nIV.2.3.4. Análisis de diversidad de la vegetación {codigo_maxima}.')
     i4234_format = capitulo4234.paragraph_format
     i4234_format.line_spacing = 1.15
 
@@ -5303,7 +6468,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.5), height=Cm(2.3))
 
     #########################
     ### Descripcion del capitulo 4.2.3.4 ###
@@ -5345,7 +6510,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.5), height=Cm(3.77))
 
     #########################
     ### Descripcion del capitulo 4.2.3.4 ###
@@ -5387,7 +6552,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.95), height=Cm(3.79))
 
     #########################
     ### Descripcion del capitulo 4.2.3.4 ###
@@ -5429,7 +6594,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.95), height=Cm(2.3))
 
     #########################
     ### Descripcion del capitulo 4.2.3.4 ###
@@ -5471,7 +6636,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.5), height=Cm(4.35))
 
     #########################
     ### Descripcion del capitulo 4.2.3.4 ###
@@ -5512,7 +6677,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.5), height=Cm(5.71))
 
     #########################
     ### Descripcion del capitulo 4.2.3.4 ###
@@ -5554,7 +6719,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.5), height=Cm(6.04))
 
     #########################
     ### Descripcion del capitulo 4.2.3.4 ###
@@ -5597,7 +6762,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.5), height=Cm(6.04))
 
     #########################
     ### Descripcion del capitulo 4.2.3.4 ###
@@ -5641,7 +6806,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.91), height=Cm(2.94))
 
     #########################
     ### Descripcion del capitulo 4.2.3.4 ###
@@ -5686,7 +6851,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.91), height=Cm(2.94))
 
     #########################
     ### Descripcion del capitulo 4.2.3.4 ###
@@ -5728,7 +6893,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.91), height=Cm(2.94))
 
     #########################
     ### Descripcion del capitulo 4.2.3.4 ###
@@ -5770,7 +6935,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.5), height=Cm(4.29))
 
     #########################
     ### Descripcion del capitulo 4.2.3.4 ###
@@ -5812,7 +6977,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.91), height=Cm(2.94))
 
     #########################
     ### Descripcion del capitulo 4.2.3.4 ###
@@ -5893,10 +7058,89 @@ def capitulo4():
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+
+    #########################
     ### Titulo del capitulo 4.2.3.4.1 ###
     #########################
     capitulo42341 = doc.add_paragraph()
-    i42341 = capitulo42341.add_run(f'\n{temasCapitulo4[1][2][4][5][0]}')
+    i42341 = capitulo42341.add_run(f'\nIV.2.3.4.1 Análisis de diversidad del estrato de las arbóreas {codigo_maxima}.')
     i42341_format = capitulo42341.paragraph_format
     i42341_format.line_spacing = 1.15
 
@@ -5905,15 +7149,646 @@ def capitulo4():
     i42341.font.bold = True
     capitulo42341.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
+    #########################
+    ### Titulo de la tabla del capitulo 4.2.3.4.1 ###
+    #########################
+    tituloTabla42342 = doc.add_paragraph()
+    dti42342 = tituloTabla42342.add_run(f'\nTabla 4.x.- Índice de diversidad de estrato de las arbóreas {codigo_maxima}')
+    dti42342_format = tituloTabla42342.paragraph_format
+    dti42342_format.line_spacing = 1.15
+    dti42342_format.space_after = 0
+
+    dti42342.font.name = 'Courier New'
+    dti42342.font.size = Pt(12)
+    tituloTabla42342.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    #########################
+    ### Tabla del capitulo 4.2.3.4.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=40, cols=9, style='Table Grid')
+
+    for cols in range(9):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(40):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.4.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('Es un parámetro que permite conocer la abundancia de una especie o una clase de plantas. ')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.15
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('En la presente tabla y gráfica podemos observar que la densidad de las especies, del área del sistema ambiental es diversa, donde la especie _____________ con ______ ind/ha, es la de mayor dominancia, seguida por ___________ y Larrea ________ con _____ y _____ ind/ha respectivamente, como las especies codominantes, mientras que ___________, ____________________, ___________ y _________________ con ____ ind/ha como las especies de menor densidad.')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.15
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Grafica del capitulo 4.2.3.4.1 ###
+    #########################
+    # Ruta absoluta al archivo 'grafico.jpg' basado en la ubicación del script capitulo4.py
+    BASE_DIR = os.path.dirname(__file__)  # directorio donde está capitulo4.py
+
+    ruta_imagen = os.path.join(BASE_DIR, 'capitulo4', 'grafico.jpg')
+
+    # Ahora la usas para agregar la imagen
+    imagenCapitulo4222 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4222.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    #########################
+    ### Titulo de la grafica del capitulo 4.2.3.4.1 ###
+    #########################
+    tituloGrafico42342 = doc.add_paragraph()
+    dgi42342 = tituloGrafico42342.add_run(f'Grafica 4.5.- Densidad de Estrato de las arbóreas {codigo_maxima}.')
+    dgi42342_format = tituloGrafico42342.paragraph_format
+    dgi42342_format.line_spacing = 1.15
+    dgi42342_format.space_after = 0
+
+    dgi42342.font.name = 'Bookman Old Style'
+    dgi42342.font.size = Pt(12)
+    tituloGrafico42342.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    ########################################################################################################################################################################
+    ### Hoja en Horizontal para ver la tabla del capitulo 4.2.3.4.1 ###
+    ########################################################################################################################################################################
+    """
+        ==================================================================================================================================================================
+            El siguiente codigo muestra como se tiene que insertar la hoja en horizontal.
+        ==================================================================================================================================================================
+    """
+
+    new_section = doc.add_section(WD_SECTION.NEW_PAGE)
+
+    # Cambiar orientación a horizontal
+    new_section.orientation = WD_ORIENT.LANDSCAPE
+    new_section.page_width, new_section.page_height = new_section.page_height, new_section.page_width
+    new_section.left_margin = Cm(2.5)
+    new_section.right_margin = Cm(2.5)
+    new_section.top_margin = Cm(2)
+    new_section.bottom_margin = Cm(2.5)
+
+    #########################1
+    ### Titulo de la tabla del capitulo 4.2.3.4.1 ###
+    #########################
+    tituloTabla42342 = doc.add_paragraph()
+    dti42342 = tituloTabla42342.add_run(f'\nTabla 4.x.- Valor de Importancia de las arbóreas {codigo_maxima} en el SA.')
+    dti42342_format = tituloTabla42342.paragraph_format
+    dti42342_format.line_spacing = 1.15
+    dti42342_format.space_after = 0
+
+    dti42342.font.name = 'Courier New'
+    dti42342.font.size = Pt(12)
+    tituloTabla42342.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    #########################
+    ### Tabla del capitulo 4.2.3.4.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=40, cols=11, style='Table Grid')
+
+    for cols in range(11):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(40):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.4.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nDescripcion del capitulo')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.15
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Grafica del capitulo 4.2.3.4.1 ###
+    #########################
+    # Ruta absoluta al archivo 'grafico.jpg' basado en la ubicación del script capitulo4.py
+    BASE_DIR = os.path.dirname(__file__)  # directorio donde está capitulo4.py
+
+    ruta_imagen = os.path.join(BASE_DIR, 'capitulo4', 'grafico.jpg')
+
+    # Ahora la usas para agregar la imagen
+    imagenCapitulo4222 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4222.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    #########################
+    ### Titulo de la grafica del capitulo 4.2.2.3.4.1 ###
+    #########################
+    tituloGrafico42341 = doc.add_paragraph()
+    dgi42342 = tituloGrafico42342.add_run('Grafica 4.6.- Valor de Importancia Estrato arbóreas ___.')
+    dgi42342_format = tituloGrafico42342.paragraph_format
+    dgi42342_format.line_spacing = 1.15
+    dgi42342_format.space_after = 0
+
+    dgi42342.font.name = 'Bookman Old Style'
+    dgi42342.font.size = Pt(12)
+    tituloGrafico42342.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    ########################################################################################################################################################################
+    ### Hoja en Vertical para ver el resto del capitulo 4.2.3.4.1 ###
+    ########################################################################################################################################################################
+    """
+        ==================================================================================================================================================================
+            El siguiente codigo muestra como se tiene que insertar la hoja en vertical.
+        ==================================================================================================================================================================
+    """
+
+    new_section = doc.add_section(WD_SECTION.NEW_PAGE)
+
+    # Cambiar orientación a horizontal
+    new_section.orientation = WD_ORIENT.PORTRAIT
+    new_section.page_width, new_section.page_height = new_section.page_height, new_section.page_width
+    new_section.left_margin = Cm(2)
+    new_section.right_margin = Cm(2.5)
+    new_section.top_margin = Cm(2.5)
+    new_section.bottom_margin = Cm(2.5)
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.4.1 ###
+    #########################
+    di42341 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42341.add_run('ABUNDANCIA')
+    descripcionCapitulo42342_format = di42341.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.15
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################1
+    ### Titulo de la tabla del capitulo 4.2.3.4.1 ###
+    #########################
+    tituloTabla42342 = doc.add_paragraph()
+    dti42342 = tituloTabla42342.add_run('\nTabla 4.x.- Valor de Importancia de las arbóreas ___ en el Sistema Ambiental.')
+    dti42342_format = tituloTabla42342.paragraph_format
+    dti42342_format.line_spacing = 1.15
+    dti42342_format.space_after = 0
+
+    dti42342.font.name = 'Courier New'
+    dti42342.font.size = Pt(12)
+    tituloTabla42342.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    #########################
+    ### Tabla del capitulo 4.2.3.4.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=40, cols=8, style='Table Grid')
+
+    for cols in range(8):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(40):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.4.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run(f'\n El valor de importancia en el estrato arbustivo está representado por ________ con ________ % seguido por _______________ con _____%, dicha especie registra mayor frecuencia en el área ya que se encontró en ___ de los ___ sitios muestreados, mientras que las de menor valor son ______ y ____________ con _____% cada uno. registrándose apenas en __ sitio de ____ muestreados, como se observar en el cuadro y gráfica presente.')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.15
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Grafica del capitulo 4.2.3.4.1 ###
+    #########################
+    # Ruta absoluta al archivo 'grafico.jpg' basado en la ubicación del script capitulo4.py
+    BASE_DIR = os.path.dirname(__file__)  # directorio donde está capitulo4.py
+
+    ruta_imagen = os.path.join(BASE_DIR, 'capitulo4', 'grafico.jpg')
+
+    # Ahora la usas para agregar la imagen
+    imagenCapitulo4222 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4222.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    #########################
+    ### Titulo de la grafica del capitulo 4.2.2.4.1 ###
+    #########################
+    tituloGrafico42342 = doc.add_paragraph()
+    dgi42342 = tituloGrafico42342.add_run(f'Grafica 4.7.- Valor de abundancia absoluta {vegetacion_maxima}.')
+    dgi42342_format = tituloGrafico42342.paragraph_format
+    dgi42342_format.line_spacing = 1.15
+    dgi42342_format.space_after = 0
+
+    dgi42342.font.name = 'Bookman Old Style'
+    dgi42342.font.size = Pt(12)
+    tituloGrafico42342.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    #########################
+    ### Salto de Pagina en el capitulo 4.2.3.4.1 ###
+    #########################
+    doc.add_page_break() # Salto de página
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.4.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nRIQUEZA DE ESPECIE')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    #descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nÍndice de Margalef')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nEl índice de Biodiversidad de las __ especies presentes en el Sistema Ambiental nos arroja que tenemos una diversidad del ____ dado que los rangos inferiores a 2 son considerados como relacionados con zonas de baja Biodiversidad y valores superiores a 5 son considerados como indicativos de alta Biodiversidad, el área del sistema ambiental se contempla en un rango _______ de diversidad de acuerdo al tipo de vegetación y ecosistema donde se desarrolla. ')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Tabla del capitulo 4.2.3.4.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=4, cols=2, style='Table Grid')
+
+    for cols in range(2):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(4):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.4.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nÍndice de Menhinick')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nLa riqueza de las __ especies presentes en el área arroja una diversidad del ____, dado que los rangos van de 2 a 5, donde los rangos inferiores a 2 son considerados como relacionados con zonas de baja Biodiversidad y valores superiores a 5 son considerados como alta Biodiversidad, por lo tanto, el área presenta diversidad _____.')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Tabla del capitulo 4.2.3.4.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=3, cols=2, style='Table Grid')
+
+    for cols in range(2):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(3):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.4.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nINDICE DE DOMINANCIA')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    #descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('Índice de Simpson')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('De acuerdo al índice de Simpson, la dominancia en este estrato es de ____, mientras que el índice de diversidad es de ____, por lo que podemos decir que hay _______________, de acuerdo a los rangos que van de 0 a 1.')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Tabla del capitulo 4.2.3.4.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=2, cols=2, style='Table Grid')
+
+    for cols in range(2):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(2):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.4.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nÍndice de Berger - Parker')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('De acuerdo al índice de Berger - Parker, tenemos una dominancia de _____ dado que los valores van de 0 a 1, podemos decir que al área tiene una dominancia ______, como podemos ver en el siguiente cuadro')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Tabla del capitulo 4.2.3.4.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=3, cols=2, style='Table Grid')
+
+    for cols in range(2):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(3):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.4.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nINDICE DE EQUIDAD')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    #descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('Índice de Shannon')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('El índice de diversidad de las ___ especies presentes en el Sistema Ambiental nos arroja que tenemos una baja diversidad de _____, considerando que los rangos de un valor normal están entre 2 y 3 para los valores inferiores a 2 se consideran bajos y superiores a 3 son altos, podemos decir que la equidad del área ___________.')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Tabla del capitulo 4.2.3.4.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=4, cols=2, style='Table Grid')
+
+    for cols in range(4):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(2):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.4.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nÍndice de Pielou')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('El índice de equidad de acuerdo a Pielou es de _____, __________________________________________________________, considerando que el rango va de 0 a 1, podemos decir que el sistema ambiental está dentro de un área con una equidad ______.')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Tabla del capitulo 4.2.3.4.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=3, cols=2, style='Table Grid')
+
+    for cols in range(2):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(3):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
     ########################################################################################################################################################################
     # Capitulo 4.2.3.4.2
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+
+    #########################
     ### Titulo del capitulo 4.2.3.4.2 ###
     #########################
     capitulo42341 = doc.add_paragraph()
-    i42341 = capitulo42341.add_run(f'\n{temasCapitulo4[1][2][4][5][1]}')
+    i42341 = capitulo42341.add_run(f'\nIV.2.3.4.2.- Análisis de diversidad del Estrato de las Arbustivas {vegetacion_maxima}')
     i42341_format = capitulo42341.paragraph_format
     i42341_format.line_spacing = 1.15
 
@@ -5926,7 +7801,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.4.2 ###
     #########################
     tituloTabla42342 = doc.add_paragraph()
-    dti42342 = tituloTabla42342.add_run('\nTabla 4.x.- Índice de diversidad de estrato de las arbbustivas ___')
+    dti42342 = tituloTabla42342.add_run(f'\nTabla 4.x.- Índice de diversidad de estrato de las arbbustivas {vegetacion_maxima}')
     dti42342_format = tituloTabla42342.paragraph_format
     dti42342_format.line_spacing = 1.15
     dti42342_format.space_after = 0
@@ -5951,10 +7826,21 @@ def capitulo4():
             t42342.font.name = 'Arial'
 
     #########################
-    ### Descripcion del capitulo 4.2.3.4.1 ###
+    ### Descripcion del capitulo 4.2.3.4.2 ###
     #########################
     di42342 = doc.add_paragraph()
-    descripcionCapitulo42342 = di42342.add_run('Descripcion del capitulo')
+    descripcionCapitulo42342 = di42342.add_run('Es un parámetro que permite conocer la abundancia de una especie o una clase de plantas.')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.15
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('En la presente tabla y gráfica podemos observar que la densidad de las especies, del área del sistema ambiental es diversa, donde la especie _____________ con ______ ind/ha, es la de mayor dominancia, seguida por ___________ y Larrea ________ con _____ y _____ ind/ha respectivamente, como las especies codominantes, mientras que ___________, ____________________, ___________ y _________________ con ____ ind/ha como las especies de menor densidad.')
     descripcionCapitulo42342_format = di42342.paragraph_format
     descripcionCapitulo42342_format.line_spacing = 1.15
     descripcionCapitulo42342_format.space_after = 0
@@ -5980,7 +7866,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.4.2 ###
     #########################
     tituloGrafico42342 = doc.add_paragraph()
-    dgi42342 = tituloGrafico42342.add_run('Grafica 4.5.- Densidad de Estrato Arbustivo ___.')
+    dgi42342 = tituloGrafico42342.add_run(f'Grafica 4.5.- Densidad de Estrato Arbustivo {vegetacion_maxima}.')
     dgi42342_format = tituloGrafico42342.paragraph_format
     dgi42342_format.line_spacing = 1.15
     dgi42342_format.space_after = 0
@@ -6012,7 +7898,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.4.2 ###
     #########################
     tituloTabla42342 = doc.add_paragraph()
-    dti42342 = tituloTabla42342.add_run('\nTabla 4.x.- Valor de Importancia de las arbustivas ___ en el SA.')
+    dti42342 = tituloTabla42342.add_run(f'\nTabla 4.x.- Valor de Importancia de las arbustivas {vegetacion_maxima} en el SA.')
     dti42342_format = tituloTabla42342.paragraph_format
     dti42342_format.line_spacing = 1.15
     dti42342_format.space_after = 0
@@ -6040,7 +7926,7 @@ def capitulo4():
     ### Descripcion del capitulo 4.2.3.4.2 ###
     #########################
     di42342 = doc.add_paragraph()
-    descripcionCapitulo42342 = di42342.add_run('\nDescripcion del capitulo')
+    descripcionCapitulo42342 = di42342.add_run('\nEl valor de importancia en el estrato arbustivo está representado por ________ con ________ % seguido por _______________ con _____%, dicha especie registra mayor frecuencia en el área ya que se encontró en ___ de los ___ sitios muestreados, mientras que las de menor valor son ______ y ____________ con _____% cada uno. registrándose apenas en __ sitio de ____ muestreados, como se observar en el cuadro y gráfica presente.')
     descripcionCapitulo42342_format = di42342.paragraph_format
     descripcionCapitulo42342_format.line_spacing = 1.15
     descripcionCapitulo42342_format.space_after = 0
@@ -6066,7 +7952,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.2.5 ###
     #########################
     tituloGrafico42341 = doc.add_paragraph()
-    dgi42342 = tituloGrafico42342.add_run('Grafica 4.6.- Valor de Importancia Estrato Arbustivo ___.')
+    dgi42342 = tituloGrafico42342.add_run(f'Grafica 4.6.- Valor de Importancia Estrato Arbustivo {vegetacion_maxima}.')
     dgi42342_format = tituloGrafico42342.paragraph_format
     dgi42342_format.line_spacing = 1.15
     dgi42342_format.space_after = 0
@@ -6113,7 +7999,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.4.2 ###
     #########################
     tituloTabla42342 = doc.add_paragraph()
-    dti42342 = tituloTabla42342.add_run('\nTabla 4.x.- Valor de Importancia de las arbustiva ___ en el Sistema Ambiental.')
+    dti42342 = tituloTabla42342.add_run(f'\nTabla 4.x.- Valor de Importancia de las arbustiva {vegetacion_maxima} en el Sistema Ambiental.')
     dti42342_format = tituloTabla42342.paragraph_format
     dti42342_format.line_spacing = 1.15
     dti42342_format.space_after = 0
@@ -6141,7 +8027,7 @@ def capitulo4():
     ### Descripcion del capitulo 4.2.3.4.2 ###
     #########################
     di42342 = doc.add_paragraph()
-    descripcionCapitulo42342 = di42342.add_run('\nDescripcion del capitulo')
+    descripcionCapitulo42342 = di42342.add_run('\nLa abundancia absoluta expresa la representatividad de una especie dentro del conjunto de especies en el área, en el siguiente cuadro y gráfica podemos ver que en el sistema ambiental las especies de mayor abundancia es _____________ seguido por ________________ mientras que las especies ______________ y ______________ son las especies de menor abundancia.')
     descripcionCapitulo42342_format = di42342.paragraph_format
     descripcionCapitulo42342_format.line_spacing = 1.15
     descripcionCapitulo42342_format.space_after = 0
@@ -6167,7 +8053,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.2.5 ###
     #########################
     tituloGrafico42342 = doc.add_paragraph()
-    dgi42342 = tituloGrafico42342.add_run('Grafica 4.7.- Valor de abundancia absoluta ___.')
+    dgi42342 = tituloGrafico42342.add_run(f'Grafica 4.7.- Valor de abundancia absoluta {vegetacion_maxima}.')
     dgi42342_format = tituloGrafico42342.paragraph_format
     dgi42342_format.line_spacing = 1.15
     dgi42342_format.space_after = 0
@@ -6468,10 +8354,89 @@ def capitulo4():
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+
+    #########################
     ### Titulo del capitulo 4.2.3.4.3 ###
     #########################
     capitulo42343 = doc.add_paragraph()
-    i42343 = capitulo42343.add_run(f'\n{temasCapitulo4[1][2][4][5][2]}')
+    i42343 = capitulo42343.add_run(f'\nIV.2.3.4.3.- Análisis de diversidad del Estrato de las Herbáceas {codigo_maxima}')
     i42343_format = capitulo42341.paragraph_format
     i42343_format.line_spacing = 1.15
 
@@ -6484,7 +8449,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.4.3 ###
     #########################
     tituloTabla42343 = doc.add_paragraph()
-    dti42343 = tituloTabla42343.add_run('\nTabla 4.x.- Índice de diversidad de estrato de las arbbustivas ___')
+    dti42343 = tituloTabla42343.add_run(f'\nTabla 4.x.- Índice de diversidad de estrato de las Herbáceas {codigo_maxima}')
     dti42343_format = tituloTabla42343.paragraph_format
     dti42343_format.line_spacing = 1.15
     dti42343_format.space_after = 0
@@ -6512,7 +8477,7 @@ def capitulo4():
     ### Descripcion del capitulo 4.2.3.4.3 ###
     #########################
     di42343 = doc.add_paragraph()
-    descripcionCapitulo42343 = di42343.add_run('Descripcion del capitulo')
+    descripcionCapitulo42343 = di42343.add_run('En el estrato herbáceo tenemos que la densidad está representada por la especie _________________ con ________ ind/ha seguida por _______________ y _____________ con _______ ind/ha. Mientras que Dalea pogonathera y Euphorbia prostrata con _____ ind/ha son las especies con menor densidad, como se puede observar en el cuadro y gráfica.')
     descripcionCapitulo42343_format = di42343.paragraph_format
     descripcionCapitulo42343_format.line_spacing = 1.15
     descripcionCapitulo42343_format.space_after = 0
@@ -6538,7 +8503,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.4.3 ###
     #########################
     tituloGrafico42343 = doc.add_paragraph()
-    dgi42343 = tituloGrafico42343.add_run('Grafica 4.8.- Densidad de Estrato Herbaceo ___.')
+    dgi42343 = tituloGrafico42343.add_run(f'Grafica 4.8.- Densidad de Estrato Herbaceo {codigo_maxima}.')
     dgi42343_format = tituloGrafico42343.paragraph_format
     dgi42343_format.line_spacing = 1.15
     dgi42343_format.space_after = 0
@@ -6570,7 +8535,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.4.3 ###
     #########################
     tituloTabla42343 = doc.add_paragraph()
-    dti42343 = tituloTabla42343.add_run('\nTabla 4.x.- Valor de abundancia de herbacéas ___ en el Sistema Ambiental.')
+    dti42343 = tituloTabla42343.add_run(f'\nTabla 4.x.- Valor de abundancia de herbacéas {codigo_maxima} en el Sistema Ambiental.')
     dti42343_format = tituloTabla42343.paragraph_format
     dti42343_format.line_spacing = 1.15
     dti42343_format.space_after = 0
@@ -6603,7 +8568,7 @@ def capitulo4():
     ### Descripcion del capitulo 4.2.3.4.3 ###
     #########################
     di42343 = doc.add_paragraph()
-    descripcionCapitulo42343 = di42343.add_run('\nDescripcion del capitulo')
+    descripcionCapitulo42343 = di42343.add_run('\nEn el estrato herbáceo tenemos que la densidad está representada por la especie _________________ con ________ ind/ha seguida por _______________ y _____________ con _______ ind/ha. Mientras que Dalea pogonathera y Euphorbia prostrata con _____ ind/ha son las especies con menor densidad, como se puede observar en el cuadro y gráfica.')
     descripcionCapitulo42343_format = di42343.paragraph_format
     descripcionCapitulo42343_format.line_spacing = 1.15
     descripcionCapitulo42343_format.space_after = 0
@@ -6629,7 +8594,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.4.3 ###
     #########################
     tituloGrafico42343 = doc.add_paragraph()
-    dgi42343 = tituloGrafico42343.add_run('Grafica 4.9.- Valor de Importancia Estrato Herbácea ___.')
+    dgi42343 = tituloGrafico42343.add_run(f'Grafica 4.9.- Valor de Importancia Estrato Herbácea {codigo_maxima}.')
     dgi42343_format = tituloGrafico42343.paragraph_format
     dgi42343_format.line_spacing = 1.15
     dgi42343_format.space_after = 0
@@ -6661,7 +8626,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.4.3 ###
     #########################
     tituloTabla42343 = doc.add_paragraph()
-    dti42343 = tituloTabla42343.add_run('\nTabla 4.x.- Valor de abundancia de herbacéas ___ en el Sistema Ambiental.')
+    dti42343 = tituloTabla42343.add_run(f'\nTabla 4.x.- Valor de abundancia de herbacéas {codigo_maxima} en el Sistema Ambiental.')
     dti42343_format = tituloTabla42343.paragraph_format
     dti42343_format.line_spacing = 1.15
     dti42343_format.space_after = 0
@@ -6686,6 +8651,20 @@ def capitulo4():
             t42343.font.name = 'Arial'
 
     #########################
+    ### Descripcion del capitulo 4.2.3.4.3 ###
+    #########################
+    di42343 = doc.add_paragraph()
+    descripcionCapitulo42343 = di42343.add_run('\nLa abundancia que se presenta en el estrato herbáceo está dominada por la especie ______________, mientras que las especies con menor abundancia son __________________ y ______________, como se observa en la gráfica y tabla de abundancia. ')
+    descripcionCapitulo42343_format = di42343.paragraph_format
+    descripcionCapitulo42343_format.line_spacing = 1.5
+    #descripcionCapitulo42343_format.space_after = 0
+    descripcionCapitulo42343_format.space_before = 0
+
+    descripcionCapitulo42343.font.name = 'Arial'
+    descripcionCapitulo42343.font.size = Pt(12)
+    di42343.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
     ### Grafica del capitulo 4.2.3.4.3 ###
     #########################
     # Ruta absoluta al archivo 'grafico.jpg' basado en la ubicación del script capitulo4.py
@@ -6701,7 +8680,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.4.3 ###
     #########################
     tituloGrafico42343 = doc.add_paragraph()
-    dgi42343 = tituloGrafico42343.add_run('Grafica 4.9.- Abundancia del estrato Herbáceas ____')
+    dgi42343 = tituloGrafico42343.add_run(f'Grafica 4.9.- Abundancia del estrato Herbáceas {codigo_maxima}')
     dgi42343_format = tituloGrafico42343.paragraph_format
     dgi42343_format.line_spacing = 1.15
     dgi42343_format.space_after = 0
@@ -7021,10 +9000,89 @@ def capitulo4():
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+
+    #########################
     ### Titulo del capitulo 4.2.3.4.4 ###
     #########################
     capitulo42344 = doc.add_paragraph()
-    i42344 = capitulo42344.add_run(f'\n{temasCapitulo4[1][2][4][5][3]}')
+    i42344 = capitulo42344.add_run(f'\nIV.2.3.4.4.- Análisis de diversidad del Estrato de las Gramíneas {codigo_maxima}.')
     i42344_format = capitulo42344.paragraph_format
     i42344_format.line_spacing = 1.15
 
@@ -7037,7 +9095,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.4.4 ###
     #########################
     tituloTabla42344 = doc.add_paragraph()
-    dti42344 = tituloTabla42344.add_run('\nTabla 4.x.- Valor de densidad en gramíneas MDR en el Sistema Ambiental. ')
+    dti42344 = tituloTabla42344.add_run(f'\nTabla 4.x.- Valor de densidad en gramíneas {codigo_maxima} en el Sistema Ambiental. ')
     dti42344_format = tituloTabla42344.paragraph_format
     dti42344_format.line_spacing = 1.15
     dti42344_format.space_after = 0
@@ -7065,7 +9123,7 @@ def capitulo4():
     ### Descripcion del capitulo 4.2.3.4.4 ###
     #########################
     di42344 = doc.add_paragraph()
-    descripcionCapitulo42344 = di42344.add_run('Descripcion del capitulo')
+    descripcionCapitulo42344 = di42344.add_run('La densidad en el área del Sistema Ambiental está dominada por ___________, con ______ individuos/ha, seguida por, _______________ con _______ individuos/ha, mientras que la especie de menor densidad son __________________, ____________ y ____________ con ____ individuos/ha cada uno, como se observa en la gráfica y tabla de densidad.')
     descripcionCapitulo42344_format = di42344.paragraph_format
     descripcionCapitulo42344_format.line_spacing = 1.15
     descripcionCapitulo42344_format.space_after = 0
@@ -7138,7 +9196,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.4.4 ###
     #########################
     tituloTabla42344 = doc.add_paragraph()
-    dti42344 = tituloTabla42344.add_run('\nTabla 4.X.-	Valor de importancia de gramíneas ___ en el Sistema Ambiental.')
+    dti42344 = tituloTabla42344.add_run(f'\nTabla 4.X.-	Valor de importancia de gramíneas {codigo_maxima} en el Sistema Ambiental.')
     dti42344_format = tituloTabla42344.paragraph_format
     dti42344_format.line_spacing = 1.15
     dti42344_format.space_after = 0
@@ -7166,7 +9224,7 @@ def capitulo4():
     ### Descripcion del capitulo 4.2.3.4.4 ###
     #########################
     di42344 = doc.add_paragraph()
-    descripcionCapitulo42344 = di42344.add_run('\nDescripcion del capitulo')
+    descripcionCapitulo42344 = di42344.add_run('\nEn la gráfica de valor de importancia se puede observar que la especie con el mayor valor en este parámetro es ___________ con ____%, seguida por ___________ con _____%, mientras que la especie con menor valor de importancia es _____________ con ____% seguido por ___________ ____%. la especie con mayor frecuencia fue ________________ encontrándose en __ de ____ sitios muestreados como se observa en la tabla anterior.')
     descripcionCapitulo42344_format = di42344.paragraph_format
     descripcionCapitulo42344_format.line_spacing = 1.15
     descripcionCapitulo42344_format.space_after = 0
@@ -7197,7 +9255,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.4.4 ###
     #########################
     tituloGrafico42344 = doc.add_paragraph()
-    dgi42344 = tituloGrafico42344.add_run('Grafica 4.12.- Abundancia estrato de gramíneas ____.')
+    dgi42344 = tituloGrafico42344.add_run(f'Grafica 4.12.- Abundancia estrato de gramíneas {codigo_maxima}.')
     dgi42344_format = tituloGrafico42344.paragraph_format
     dgi42344_format.line_spacing = 1.15
     dgi42344_format.space_after = 0
@@ -7248,7 +9306,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.4.4 ###
     #########################
     tituloTabla42344 = doc.add_paragraph()
-    dti42344 = tituloTabla42344.add_run('\nTabla 4.x.- Valor de abundancia de herbacéas ___ en el Sistema Ambiental.')
+    dti42344 = tituloTabla42344.add_run(f'\nTabla 4.x.- Valor de abundancia de gramíneas {codigo_maxima} en el Sistema Ambiental.')
     dti42344_format = tituloTabla42344.paragraph_format
     dti42344_format.line_spacing = 1.15
     dti42344_format.space_after = 0
@@ -7273,6 +9331,21 @@ def capitulo4():
             t42344.font.name = 'Arial'
 
     #########################
+    ### Descripcion del capitulo 4.2.3.4.4 ###
+    #########################
+    di42344 = doc.add_paragraph()
+    descripcionCapitulo42344 = di42344.add_run('\nLa abundancia en el área de Sistema Ambiental está dominada por la especie ___________ seguida por _____________, mientras que ____________, ____________ y ____________ son las especies con menor abundancia dentro del área.')
+    descripcionCapitulo42344_format = di42344.paragraph_format
+    descripcionCapitulo42344_format.line_spacing = 1.5
+    #descripcionCapitulo42343_format.space_after = 0
+    descripcionCapitulo42344_format.space_before = 0
+
+    descripcionCapitulo42344.font.name = 'Arial'
+    descripcionCapitulo42344.font.size = Pt(12)
+    descripcionCapitulo42344.font.bold = True
+    di42344.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
     ### Grafica del capitulo 4.2.3.4.4 ###
     #########################
     # Ruta absoluta al archivo 'grafico.jpg' basado en la ubicación del script capitulo4.py
@@ -7288,7 +9361,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.4.4 ###
     #########################
     tituloGrafico42344 = doc.add_paragraph()
-    dgi42344 = tituloGrafico42344.add_run('Grafica 4.9.- Abundancia del estrato Herbáceas ____')
+    dgi42344 = tituloGrafico42344.add_run(f'Grafica 4.9.- Abundancia del estrato gramíneas {codigo_maxima}')
     dgi42344_format = tituloGrafico42344.paragraph_format
     dgi42344_format.line_spacing = 1.15
     dgi42344_format.space_after = 0
@@ -7594,10 +9667,89 @@ def capitulo4():
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+    
+    #########################
     ### Titulo del capitulo 4.2.3.4.5 ###
     #########################
     capitulo42345 = doc.add_paragraph()
-    i42345 = capitulo42345.add_run(f'\n{temasCapitulo4[1][2][4][5][4]}')
+    i42345 = capitulo42345.add_run(f'\nIV.2.3.4.4.- Análisis de diversidad del Estrato de las Suculentas {codigo_maxima}')
     i42345_format = capitulo42345.paragraph_format
     i42345_format.line_spacing = 1.15
 
@@ -7610,7 +9762,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.4.5 ###
     #########################
     tituloTabla42345 = doc.add_paragraph()
-    dti42345 = tituloTabla42345.add_run('\nTabla 4.x.- Valor de densidad de suculentas MDR en el Sistema Ambiental. ')
+    dti42345 = tituloTabla42345.add_run(f'\nTabla 4.x.- Valor de densidad de suculentas {codigo_maxima} en el Sistema Ambiental. ')
     dti42345_format = tituloTabla42345.paragraph_format
     dti42345_format.line_spacing = 1.15
     dti42345_format.space_after = 0
@@ -7638,7 +9790,7 @@ def capitulo4():
     ### Descripcion del capitulo 4.2.3.4.5 ###
     #########################
     di42345 = doc.add_paragraph()
-    descripcionCapitulo42345 = di42345.add_run('Descripcion del capitulo')
+    descripcionCapitulo42345 = di42345.add_run('La densidad del estrato suculento en el área del sistema ambiental, podemos ver que está representada por _____________ con _______ individuos/ha, seguido por ___________ con ____ individuos/ha, mientras que las especies de menor densidad son: ___________, _____________ y ________________ con ___ individuos/ha tal como se observa en la siguiente gráfica.')
     descripcionCapitulo42345_format = di42345.paragraph_format
     descripcionCapitulo42345_format.line_spacing = 1.15
     descripcionCapitulo42345_format.space_after = 0
@@ -7664,7 +9816,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.4.5 ###
     #########################
     tituloGrafico42345 = doc.add_paragraph()
-    dgi42345 = tituloGrafico42345.add_run('Grafica 4.10.- Densidad de gramíneas ____.')
+    dgi42345 = tituloGrafico42345.add_run('Grafica 4.10.- Densidad de suculentas ____.')
     dgi42345_format = tituloGrafico42345.paragraph_format
     dgi42345_format.line_spacing = 1.15
     dgi42345_format.space_after = 0
@@ -7739,7 +9891,7 @@ def capitulo4():
     ### Descripcion del capitulo 4.2.3.4.4 ###
     #########################
     di42345 = doc.add_paragraph()
-    descripcionCapitulo42345 = di42345.add_run('\nDescripcion del capitulo')
+    descripcionCapitulo42345 = di42345.add_run('\nEn el siguiente cuadro y gráfica de valor de importancia podemos ver que la especie de mayor valor es _____________ con _______% siendo también la especie con mayor frecuencia encontrándose en ___ de ___ sitios muestreados, seguido por Dasylirion cedrosanum con ____%; las especies de menor valor de importancia son ________ con ______% y _________ con _____%')
     descripcionCapitulo42345_format = di42345.paragraph_format
     descripcionCapitulo42345_format.line_spacing = 1.15
     descripcionCapitulo42345_format.space_after = 0
@@ -7770,7 +9922,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.4.5 ###
     #########################
     tituloGrafico42345 = doc.add_paragraph()
-    dgi42345 = tituloGrafico42345.add_run('Grafica 4.12.- Abundancia estrato de gramíneas ____.')
+    dgi42345 = tituloGrafico42345.add_run('Grafica 4.12.- Abundancia estrato de suculentas ____.')
     dgi42345_format = tituloGrafico42345.paragraph_format
     dgi42345_format.line_spacing = 1.15
     dgi42345_format.space_after = 0
@@ -7846,6 +9998,20 @@ def capitulo4():
             t42345.font.name = 'Arial'
 
     #########################
+    ### Descripcion del capitulo 4.2.3.4.4 ###
+    #########################
+    di42345 = doc.add_paragraph()
+    descripcionCapitulo42345 = di42345.add_run('\nLa abundancia dentro del área del sistema ambiental podemos ver que está representada por las especies de _________________, seguido por _______________, mientras que las especies con menor abundancia son ___________________,____________ y ________.')
+    descripcionCapitulo42345_format = di42345.paragraph_format
+    descripcionCapitulo42345_format.line_spacing = 1.15
+    descripcionCapitulo42345_format.space_after = 0
+    descripcionCapitulo42345_format.space_before = 0
+
+    descripcionCapitulo42345.font.name = 'Arial'
+    descripcionCapitulo42345.font.size = Pt(12)
+    di42345.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
     ### Grafica del capitulo 4.2.3.4.5 ###
     #########################
     # Ruta absoluta al archivo 'grafico.jpg' basado en la ubicación del script capitulo4.py
@@ -7861,7 +10027,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.4.5 ###
     #########################
     tituloGrafico42345 = doc.add_paragraph()
-    dgi42345 = tituloGrafico42345.add_run('Grafica 4.9.- Abundancia del estrato Herbáceas ____')
+    dgi42345 = tituloGrafico42345.add_run('Grafica 4.9.- Abundancia del estrato suculentas ____')
     dgi42345_format = tituloGrafico42345.paragraph_format
     dgi42345_format.line_spacing = 1.15
     dgi42345_format.space_after = 0
@@ -8167,10 +10333,89 @@ def capitulo4():
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+    
+    #########################
     ### Titulo del capitulo 4.2.3.4.6 ###
     #########################
     capitulo42346 = doc.add_paragraph()
-    i42346 = capitulo42346.add_run(f'\n{temasCapitulo4[1][2][4][5][5]}')
+    i42346 = capitulo42346.add_run(f'\nIV.2.3.4.5.- Análisis de los estratos {codigo_maxima}')
     i42346_format = capitulo42346.paragraph_format
     i42346_format.line_spacing = 1.15
 
@@ -8197,7 +10442,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.4.6 ###
     #########################
     tituloTabla42346 = doc.add_paragraph()
-    dti42346 = tituloTabla42346.add_run('\nTabla 4.X.- Rangos y valores de los índices MDR en el sistema ambiental')
+    dti42346 = tituloTabla42346.add_run(f'\nTabla 4.X.- Rangos y valores de los índices {codigo_maxima} en el sistema ambiental')
     dti42346_format = tituloTabla42346.paragraph_format
     dti42346_format.line_spacing = 1.15
     dti42346_format.space_after = 0
@@ -8226,10 +10471,89 @@ def capitulo4():
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+
+    #########################
     ### Titulo del capitulo 4.2.3.5 ###
     #########################
     capitulo4235 = doc.add_paragraph()
-    i4235 = capitulo4235.add_run(f'{temasCapitulo4[1][2][4][6]}')
+    i4235 = capitulo4235.add_run(f'IV.2.3.5.- Análisis de la vegetación {segundo_vegetacion.title()} ({segundo_codigo})')
     i4235_format = capitulo4235.paragraph_format
     i4235_format.line_spacing = 1.15
 
@@ -8255,7 +10579,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.5 ###
     #########################
     tituloTabla4235 = doc.add_paragraph()
-    dti4235 = tituloTabla4235.add_run('\nTabla 4.X.- Estatus de las especies por estrato ___.')
+    dti4235 = tituloTabla4235.add_run(f'\nTabla 4.X.- Estatus de las especies por estrato {segundo_codigo}.')
     dti4235_format = tituloTabla4235.paragraph_format
     dti4235_format.line_spacing = 1.15
     dti4235_format.space_after = 0
@@ -8265,19 +10589,90 @@ def capitulo4():
     tituloTabla4235.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    vegetacion_global = segundo_codigo.upper()
+
+    """
+        *******************************
+            Tabla de Especies de Vegetacion
+        *******************************
+    """
+    especies_vegetacion = EspeciesVegetacion.objects.filter(
+        codigo_veg = vegetacion_global
+    )
+
+    #########################
     ### Tabla del capitulo 4.2.3.5 ###
     #########################
-    tabla4235 = doc.add_table(rows=19, cols=5, style='Table Grid')
+    encabezados = [
+        'Estrato',
+        'Familia',
+        'Nombre Cientifico',
+        'Nombre Comun',
+        'Estatus NOM-059 SEMARNAT 2010',
+    ]
 
-    for cols in range(5):
-        cell = tabla4235.cell(0, cols)
+    tabla4232 = doc.add_table(rows=len(especies_vegetacion) + 2, cols=len(encabezados), style='Table Grid')
+
+    for i, cols in enumerate(encabezados):
+        cell = tabla4232.cell(0, i)
+        t4232 = cell.paragraphs[0].add_run(cols)
+        t4232.font.size = Pt(12)
+        t4232.font.name = 'Arial'
         cell_background_color(cell, '0070C0')
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
 
-        for rows in range(19):
-            cell = tabla4235.cell(rows, cols)
-            t4235 = cell.paragraphs[0].add_run(' ')
-            t4235.font.size = Pt(12)
-            t4235.font.name = 'Arial'
+
+    for i, filas in enumerate(especies_vegetacion):
+        cell = tabla4232.cell(i + 1, 1)
+        t4232 = cell.paragraphs[0].add_run(filas.familia)
+        t4232.font.size = Pt(12)
+        t4232.font.name = 'Arial'
+        #cell_background_color(cell, '0070C0')
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla4232.cell(i + 1, 2)
+        t4232 = cell.paragraphs[0].add_run(filas.nom_cientifico)
+        t4232.font.size = Pt(12)
+        t4232.font.name = 'Arial'
+        #cell_background_color(cell, '0070C0')
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla4232.cell(i + 1, 3)
+        t4232 = cell.paragraphs[0].add_run(filas.nombre_comun)
+        t4232.font.size = Pt(12)
+        t4232.font.name = 'Arial'
+        #cell_background_color(cell, '0070C0')
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+        cell = tabla4232.cell(i + 1, 4)
+        t4232 = cell.paragraphs[0].add_run(filas.status)
+        t4232.font.size = Pt(12)
+        t4232.font.name = 'Arial'
+        #cell_background_color(cell, '0070C0')
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+    # ✅ Celdas fusionadas
+    #celda_fusionada = len(especies_vegetacion) + 2  # +2 porque starts from 0 (encabezado + datos + esta fila total)
+    row = tabla4232.add_row()
+
+    # Fusionar columna 0 y 1
+    merged_cell = row.cells[0].merge(row.cells[4])
+
+    # Agregar texto a la celda fusionada
+    t4232 = merged_cell.paragraphs[0].add_run('A = Amenazada, P = En peligro de extinción, Pr.- Protección especial, Sc. - Sin categoría')
+    t4232.font.name = 'Arial'
+    t4232.font.size = Pt(12)
+    t4232.bold = True
+    merged_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    
 
     #########################
     ### Descripcion del capitulo 4.2.3.5 ###
@@ -8296,7 +10691,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.5 ###
     #########################
     tituloTabla4235 = doc.add_paragraph()
-    dti4235 = tituloTabla4235.add_run('\nTabla 4.X.- Coordenadas geográficas de sitios de muestreo del MDM.')
+    dti4235 = tituloTabla4235.add_run(f'\nTabla 4.X.- Coordenadas geográficas de sitios de muestreo del {segundo_codigo}.')
     dti4235_format = tituloTabla4235.paragraph_format
     dti4235_format.line_spacing = 1.15
     dti4235_format.space_after = 0
@@ -8325,10 +10720,89 @@ def capitulo4():
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+
+    #########################
     ### Titulo del capitulo 4.2.3.5.1 ###
     #########################
     capitulo4235 = doc.add_paragraph()
-    i4235 = capitulo4235.add_run(f'{temasCapitulo4[1][2][4][7][0]}')
+    i4235 = capitulo4235.add_run(f'IV.2.3.5.1- Resultados de los sitios de muestreo del {segundo_codigo} en el Sistema Ambiental.')
     i4235_format = capitulo4235.paragraph_format
     i4235_format.line_spacing = 1.15
 
@@ -8354,7 +10828,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.5.1 ###
     #########################
     tituloTabla4235 = doc.add_paragraph()
-    dti4235 = tituloTabla4235.add_run('\nTabla 4.X.- Coordenadas geográficas de sitios de muestreo del ____.')
+    dti4235 = tituloTabla4235.add_run(f'\nTabla 4.X.- Coordenadas geográficas de sitios de muestreo del {segundo_codigo}.')
     dti4235_format = tituloTabla4235.paragraph_format
     dti4235_format.line_spacing = 1.15
     dti4235_format.space_after = 0
@@ -8383,10 +10857,89 @@ def capitulo4():
     ########################################################################################################################################################################
 
     #########################
-    ### Titulo del capitulo 4.2.3 ###
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+
+    #########################
+    ### Titulo del capitulo 4.2.3.6 ###
     #########################
     capitulo4236 = doc.add_paragraph()
-    i4236 = capitulo4236.add_run(f'{temasCapitulo4[1][2][4][8]}')
+    i4236 = capitulo4236.add_run(f'IV.2.3.6. Análisis de diversidad de la vegetación {segundo_codigo}')
     i4236_format = capitulo4236.paragraph_format
     i4236_format.line_spacing = 1.15
 
@@ -8396,7 +10949,7 @@ def capitulo4():
     capitulo423.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     #########################
-    ### Descripcion del capitulo 4.2.3 ###
+    ### Descripcion del capitulo 4.2.3.6 ###
     #########################
     listaCapitulo4236 = [
         'Métodos basados en la cuantificación del número de especies presentes (riqueza específica).',
@@ -8471,7 +11024,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.5), height=Cm(2.3))
 
     #########################
     ### Descripcion del capitulo 4.2.3.6 ###
@@ -8513,7 +11066,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.5), height=Cm(3.77))
 
     #########################
     ### Descripcion del capitulo 4.2.3.6 ###
@@ -8555,7 +11108,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.95), height=Cm(3.79))
 
     #########################
     ### Descripcion del capitulo 4.2.3.6 ###
@@ -8597,7 +11150,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.95), height=Cm(2.3))
 
     #########################
     ### Descripcion del capitulo 4.2.3.6 ###
@@ -8639,7 +11192,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.5), height=Cm(4.35))
 
     #########################
     ### Descripcion del capitulo 4.2.3.6 ###
@@ -8680,7 +11233,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.5), height=Cm(5.71))
 
     #########################
     ### Descripcion del capitulo 4.2.3.6 ###
@@ -8722,7 +11275,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.5), height=Cm(6.04))
 
     #########################
     ### Descripcion del capitulo 4.2.3.6 ###
@@ -8765,7 +11318,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.5), height=Cm(6.04))
 
     #########################
     ### Descripcion del capitulo 4.2.3.6 ###
@@ -8809,7 +11362,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.91), height=Cm(2.94))
 
     #########################
     ### Descripcion del capitulo 4.2.3.6 ###
@@ -8854,7 +11407,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.91), height=Cm(2.94))
 
     #########################
     ### Descripcion del capitulo 4.2.3.6 ###
@@ -8896,7 +11449,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.91), height=Cm(2.94))
 
     #########################
     ### Descripcion del capitulo 4.2.3.6 ###
@@ -8938,7 +11491,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.5), height=Cm(4.29))
 
     #########################
     ### Descripcion del capitulo 4.2.3.6 ###
@@ -8980,7 +11533,7 @@ def capitulo4():
     if not os.path.exists(ruta_imagen):
         raise FileNotFoundError(f"No se encontró la imagen en: {ruta_imagen}")
 
-    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4 = doc.add_picture(ruta_imagen, width=Cm(1.91), height=Cm(2.94))
 
     #########################
     ### Descripcion del capitulo 4.2.3.6 ###
@@ -9061,27 +11614,737 @@ def capitulo4():
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+
+    #########################
     ### Titulo del capitulo 4.2.3.6.1 ###
     #########################
-    capitulo42361 = doc.add_paragraph()
-    i42361 = capitulo42361.add_run(f'\n{temasCapitulo4[1][2][4][9][0]}')
-    i42361_format = capitulo42361.paragraph_format
-    i42361_format.line_spacing = 1.15
+    capitulo42341 = doc.add_paragraph()
+    i42341 = capitulo42341.add_run(f'\nIV.2.3.4.1 Análisis de diversidad del estrato de las arbóreas {segundo_codigo}.')
+    i42341_format = capitulo42341.paragraph_format
+    i42341_format.line_spacing = 1.15
 
-    i42361.font.name = 'Arial'
-    i42361.font.size = Pt(12)
-    i42361.font.bold = True
-    capitulo42361.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    i42341.font.name = 'Arial'
+    i42341.font.size = Pt(12)
+    i42341.font.bold = True
+    capitulo42341.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Titulo de la tabla del capitulo 4.2.3.6.1 ###
+    #########################
+    tituloTabla42342 = doc.add_paragraph()
+    dti42342 = tituloTabla42342.add_run(f'\nTabla 4.x.- Índice de diversidad de estrato de las arbóreas {segundo_codigo}')
+    dti42342_format = tituloTabla42342.paragraph_format
+    dti42342_format.line_spacing = 1.15
+    dti42342_format.space_after = 0
+
+    dti42342.font.name = 'Courier New'
+    dti42342.font.size = Pt(12)
+    tituloTabla42342.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    #########################
+    ### Tabla del capitulo 4.2.3.4.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=40, cols=9, style='Table Grid')
+
+    for cols in range(9):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(40):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.6.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('Es un parámetro que permite conocer la abundancia de una especie o una clase de plantas. ')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.15
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('En la presente tabla y gráfica podemos observar que la densidad de las especies, del área del sistema ambiental es diversa, donde la especie _____________ con ______ ind/ha, es la de mayor dominancia, seguida por ___________ y Larrea ________ con _____ y _____ ind/ha respectivamente, como las especies codominantes, mientras que ___________, ____________________, ___________ y _________________ con ____ ind/ha como las especies de menor densidad.')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.15
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Grafica del capitulo 4.2.3.6.1 ###
+    #########################
+    # Ruta absoluta al archivo 'grafico.jpg' basado en la ubicación del script capitulo4.py
+    BASE_DIR = os.path.dirname(__file__)  # directorio donde está capitulo4.py
+
+    ruta_imagen = os.path.join(BASE_DIR, 'capitulo4', 'grafico.jpg')
+
+    # Ahora la usas para agregar la imagen
+    imagenCapitulo4222 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4222.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    #########################
+    ### Titulo de la grafica del capitulo 4.2.3.6.1 ###
+    #########################
+    tituloGrafico42342 = doc.add_paragraph()
+    dgi42342 = tituloGrafico42342.add_run(f'Grafica 4.5.- Densidad de Estrato de las arbóreas {segundo_codigo}.')
+    dgi42342_format = tituloGrafico42342.paragraph_format
+    dgi42342_format.line_spacing = 1.15
+    dgi42342_format.space_after = 0
+
+    dgi42342.font.name = 'Bookman Old Style'
+    dgi42342.font.size = Pt(12)
+    tituloGrafico42342.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    ########################################################################################################################################################################
+    ### Hoja en Horizontal para ver la tabla del capitulo 4.2.3.6.1 ###
+    ########################################################################################################################################################################
+    """
+        ==================================================================================================================================================================
+            El siguiente codigo muestra como se tiene que insertar la hoja en horizontal.
+        ==================================================================================================================================================================
+    """
+
+    new_section = doc.add_section(WD_SECTION.NEW_PAGE)
+
+    # Cambiar orientación a horizontal
+    new_section.orientation = WD_ORIENT.LANDSCAPE
+    new_section.page_width, new_section.page_height = new_section.page_height, new_section.page_width
+    new_section.left_margin = Cm(2.5)
+    new_section.right_margin = Cm(2.5)
+    new_section.top_margin = Cm(2)
+    new_section.bottom_margin = Cm(2.5)
+
+    #########################1
+    ### Titulo de la tabla del capitulo 4.2.3.6.1 ###
+    #########################
+    tituloTabla42342 = doc.add_paragraph()
+    dti42342 = tituloTabla42342.add_run(f'\nTabla 4.x.- Valor de Importancia de las arbóreas {segundo_codigo} en el SA.')
+    dti42342_format = tituloTabla42342.paragraph_format
+    dti42342_format.line_spacing = 1.15
+    dti42342_format.space_after = 0
+
+    dti42342.font.name = 'Courier New'
+    dti42342.font.size = Pt(12)
+    tituloTabla42342.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    #########################
+    ### Tabla del capitulo 4.2.3.6.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=40, cols=11, style='Table Grid')
+
+    for cols in range(11):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(40):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.6.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nDescripcion del capitulo')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.15
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Grafica del capitulo 4.2.3.6.1 ###
+    #########################
+    # Ruta absoluta al archivo 'grafico.jpg' basado en la ubicación del script capitulo4.py
+    BASE_DIR = os.path.dirname(__file__)  # directorio donde está capitulo4.py
+
+    ruta_imagen = os.path.join(BASE_DIR, 'capitulo4', 'grafico.jpg')
+
+    # Ahora la usas para agregar la imagen
+    imagenCapitulo4222 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4222.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    #########################
+    ### Titulo de la grafica del capitulo 4.2.2.3.6.1 ###
+    #########################
+    tituloGrafico42341 = doc.add_paragraph()
+    dgi42342 = tituloGrafico42342.add_run(f'Grafica 4.6.- Valor de Importancia Estrato arbóreas {segundo_codigo}.')
+    dgi42342_format = tituloGrafico42342.paragraph_format
+    dgi42342_format.line_spacing = 1.15
+    dgi42342_format.space_after = 0
+
+    dgi42342.font.name = 'Bookman Old Style'
+    dgi42342.font.size = Pt(12)
+    tituloGrafico42342.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    ########################################################################################################################################################################
+    ### Hoja en Vertical para ver el resto del capitulo 4.2.3.6.1 ###
+    ########################################################################################################################################################################
+    """
+        ==================================================================================================================================================================
+            El siguiente codigo muestra como se tiene que insertar la hoja en vertical.
+        ==================================================================================================================================================================
+    """
+
+    new_section = doc.add_section(WD_SECTION.NEW_PAGE)
+
+    # Cambiar orientación a horizontal
+    new_section.orientation = WD_ORIENT.PORTRAIT
+    new_section.page_width, new_section.page_height = new_section.page_height, new_section.page_width
+    new_section.left_margin = Cm(2)
+    new_section.right_margin = Cm(2.5)
+    new_section.top_margin = Cm(2.5)
+    new_section.bottom_margin = Cm(2.5)
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.6.1 ###
+    #########################
+    di42341 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42341.add_run('ABUNDANCIA')
+    descripcionCapitulo42342_format = di42341.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.15
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################1
+    ### Titulo de la tabla del capitulo 4.2.3.6.1 ###
+    #########################
+    tituloTabla42342 = doc.add_paragraph()
+    dti42342 = tituloTabla42342.add_run(f'\nTabla 4.x.- Valor de Importancia de las arbóreas {segundo_codigo} en el Sistema Ambiental.')
+    dti42342_format = tituloTabla42342.paragraph_format
+    dti42342_format.line_spacing = 1.15
+    dti42342_format.space_after = 0
+
+    dti42342.font.name = 'Courier New'
+    dti42342.font.size = Pt(12)
+    tituloTabla42342.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    #########################
+    ### Tabla del capitulo 4.2.3.6.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=40, cols=8, style='Table Grid')
+
+    for cols in range(8):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(40):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.6.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run(f'\n El valor de importancia en el estrato arbustivo está representado por ________ con ________ % seguido por _______________ con _____%, dicha especie registra mayor frecuencia en el área ya que se encontró en ___ de los ___ sitios muestreados, mientras que las de menor valor son ______ y ____________ con _____% cada uno. registrándose apenas en __ sitio de ____ muestreados, como se observar en el cuadro y gráfica presente.')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.15
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Grafica del capitulo 4.2.3.6.1 ###
+    #########################
+    # Ruta absoluta al archivo 'grafico.jpg' basado en la ubicación del script capitulo4.py
+    BASE_DIR = os.path.dirname(__file__)  # directorio donde está capitulo4.py
+
+    ruta_imagen = os.path.join(BASE_DIR, 'capitulo4', 'grafico.jpg')
+
+    # Ahora la usas para agregar la imagen
+    imagenCapitulo4222 = doc.add_picture(ruta_imagen, width=Cm(15.59), height=Cm(10.16))
+    imagenCapitulo4222.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    #########################
+    ### Titulo de la grafica del capitulo 4.2.2.6.1 ###
+    #########################
+    tituloGrafico42342 = doc.add_paragraph()
+    dgi42342 = tituloGrafico42342.add_run(f'Grafica 4.7.- Valor de abundancia absoluta {segundo_codigo}.')
+    dgi42342_format = tituloGrafico42342.paragraph_format
+    dgi42342_format.line_spacing = 1.15
+    dgi42342_format.space_after = 0
+
+    dgi42342.font.name = 'Bookman Old Style'
+    dgi42342.font.size = Pt(12)
+    tituloGrafico42342.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    #########################
+    ### Salto de Pagina en el capitulo 4.2.3.6.1 ###
+    #########################
+    doc.add_page_break() # Salto de página
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.6.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nRIQUEZA DE ESPECIE')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    #descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nÍndice de Margalef')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nEl índice de Biodiversidad de las __ especies presentes en el Sistema Ambiental nos arroja que tenemos una diversidad del ____ dado que los rangos inferiores a 2 son considerados como relacionados con zonas de baja Biodiversidad y valores superiores a 5 son considerados como indicativos de alta Biodiversidad, el área del sistema ambiental se contempla en un rango _______ de diversidad de acuerdo al tipo de vegetación y ecosistema donde se desarrolla. ')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Tabla del capitulo 4.2.3.6.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=4, cols=2, style='Table Grid')
+
+    for cols in range(2):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(4):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.6.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nÍndice de Menhinick')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nLa riqueza de las __ especies presentes en el área arroja una diversidad del ____, dado que los rangos van de 2 a 5, donde los rangos inferiores a 2 son considerados como relacionados con zonas de baja Biodiversidad y valores superiores a 5 son considerados como alta Biodiversidad, por lo tanto, el área presenta diversidad _____.')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Tabla del capitulo 4.2.3.6.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=3, cols=2, style='Table Grid')
+
+    for cols in range(2):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(3):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.6.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nINDICE DE DOMINANCIA')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    #descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('Índice de Simpson')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('De acuerdo al índice de Simpson, la dominancia en este estrato es de ____, mientras que el índice de diversidad es de ____, por lo que podemos decir que hay _______________, de acuerdo a los rangos que van de 0 a 1.')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Tabla del capitulo 4.2.3.6.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=2, cols=2, style='Table Grid')
+
+    for cols in range(2):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(2):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.6.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nÍndice de Berger - Parker')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('De acuerdo al índice de Berger - Parker, tenemos una dominancia de _____ dado que los valores van de 0 a 1, podemos decir que al área tiene una dominancia ______, como podemos ver en el siguiente cuadro')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Tabla del capitulo 4.2.3.6.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=3, cols=2, style='Table Grid')
+
+    for cols in range(2):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(3):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.6.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nINDICE DE EQUIDAD')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    #descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('Índice de Shannon')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('El índice de diversidad de las ___ especies presentes en el Sistema Ambiental nos arroja que tenemos una baja diversidad de _____, considerando que los rangos de un valor normal están entre 2 y 3 para los valores inferiores a 2 se consideran bajos y superiores a 3 son altos, podemos decir que la equidad del área ___________.')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Tabla del capitulo 4.2.3.4.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=4, cols=2, style='Table Grid')
+
+    for cols in range(4):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(2):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
+
+    #########################
+    ### Descripcion del capitulo 4.2.3.6.1 ###
+    #########################
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('\nÍndice de Pielou')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    descripcionCapitulo42342.bold = True
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    di42342 = doc.add_paragraph()
+    descripcionCapitulo42342 = di42342.add_run('El índice de equidad de acuerdo a Pielou es de _____, __________________________________________________________, considerando que el rango va de 0 a 1, podemos decir que el sistema ambiental está dentro de un área con una equidad ______.')
+    descripcionCapitulo42342_format = di42342.paragraph_format
+    descripcionCapitulo42342_format.line_spacing = 1.5
+    descripcionCapitulo42342_format.space_after = 0
+    descripcionCapitulo42342_format.space_before = 0
+
+    descripcionCapitulo42342.font.name = 'Arial'
+    descripcionCapitulo42342.font.size = Pt(12)
+    di42342.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    #########################
+    ### Tabla del capitulo 4.2.3.6.1 ###
+    #########################
+    tabla42342 = doc.add_table(rows=3, cols=2, style='Table Grid')
+
+    for cols in range(2):
+        cell = tabla42342.cell(0, cols)
+        cell_background_color(cell, '0070C0')
+
+        for rows in range(3):
+            cell = tabla42342.cell(rows, cols)
+            t42342 = cell.paragraphs[0].add_run(' ')
+            t42342.font.size = Pt(12)
+            t42342.font.name = 'Arial'
 
     ########################################################################################################################################################################
     # Capitulo 4.2.3.6.2
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+
+    #########################
     ### Titulo del capitulo 4.2.3.6.2 ###
     #########################
     capitulo42361 = doc.add_paragraph()
-    i42361 = capitulo42361.add_run(f'\n{temasCapitulo4[1][2][4][9][1]}')
+    i42361 = capitulo42361.add_run(f'\nIV.2.3.6.2.- Análisis de diversidad del Estrato de las Arbustivas {segundo_codigo}')
     i42361_format = capitulo42361.paragraph_format
     i42361_format.line_spacing = 1.15
 
@@ -9094,7 +12357,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.6.2 ###
     #########################
     tituloTabla42362 = doc.add_paragraph()
-    dti42362 = tituloTabla42362.add_run('\nTabla 4.x.- Índice de diversidad de estrato de las arbustivas ___')
+    dti42362 = tituloTabla42362.add_run(f'\nTabla 4.x.- Índice de diversidad de estrato de las arbustivas {segundo_codigo}')
     dti42362_format = tituloTabla42362.paragraph_format
     dti42362_format.line_spacing = 1.15
     dti42362_format.space_after = 0
@@ -9148,7 +12411,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.6.2 ###
     #########################
     tituloGrafico42362 = doc.add_paragraph()
-    dgi42362 = tituloGrafico42362.add_run('Grafica 4.16.- Densidad de Estrato Arbustivo ___.')
+    dgi42362 = tituloGrafico42362.add_run(f'Grafica 4.16.- Densidad de Estrato Arbustivo {segundo_codigo}.')
     dgi42362_format = tituloGrafico42362.paragraph_format
     dgi42362_format.line_spacing = 1.15
     dgi42362_format.space_after = 0
@@ -9180,7 +12443,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.6.2 ###
     #########################
     tituloTabla42362 = doc.add_paragraph()
-    dti42362 = tituloTabla42362.add_run('\nTabla 4.x.- Valor de Importancia de las arbustivas ___ en el SA.')
+    dti42362 = tituloTabla42362.add_run(f'\nTabla 4.x.- Valor de Importancia de las arbustivas {segundo_codigo} en el SA.')
     dti42362_format = tituloTabla42362.paragraph_format
     dti42362_format.line_spacing = 1.15
     dti42362_format.space_after = 0
@@ -9234,7 +12497,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.2.5 ###
     #########################
     tituloGrafico42361 = doc.add_paragraph()
-    dgi42362 = tituloGrafico42362.add_run('Grafica 4.17.- Valor de Importancia Estrato Arbustivo ___.')
+    dgi42362 = tituloGrafico42362.add_run(f'Grafica 4.17.- Valor de Importancia Estrato Arbustivo {segundo_codigo}.')
     dgi42362_format = tituloGrafico42362.paragraph_format
     dgi42362_format.line_spacing = 1.15
     dgi42362_format.space_after = 0
@@ -9281,7 +12544,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.6.2 ###
     #########################
     tituloTabla42362 = doc.add_paragraph()
-    dti42362 = tituloTabla42362.add_run('\nTabla 4.x.- Valor de Importancia de las arbustiva ___ en el Sistema Ambiental.')
+    dti42362 = tituloTabla42362.add_run(f'\nTabla 4.x.- Valor de Importancia de las arbustiva {segundo_codigo} en el Sistema Ambiental.')
     dti42362_format = tituloTabla42362.paragraph_format
     dti42362_format.line_spacing = 1.15
     dti42362_format.space_after = 0
@@ -9335,7 +12598,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.2.5 ###
     #########################
     tituloGrafico42362 = doc.add_paragraph()
-    dgi42362 = tituloGrafico42362.add_run('Grafica 4.18.- Valor de abundancia absoluta ___.')
+    dgi42362 = tituloGrafico42362.add_run(f'Grafica 4.18.- Valor de abundancia absoluta {segundo_codigo}.')
     dgi42362_format = tituloGrafico42362.paragraph_format
     dgi42362_format.line_spacing = 1.15
     dgi42362_format.space_after = 0
@@ -9636,10 +12899,89 @@ def capitulo4():
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+    
+    #########################
     ### Titulo del capitulo 4.2.3.6.3 ###
     #########################
     capitulo42363 = doc.add_paragraph()
-    i42363 = capitulo42363.add_run(f'\n{temasCapitulo4[1][2][4][9][2]}')
+    i42363 = capitulo42363.add_run(f'\nIV.2.3.6.3.- Análisis de diversidad del Estrato de las Herbáceas {segundo_codigo}')
     i42363_format = capitulo42363.paragraph_format
     i42363_format.line_spacing = 1.15
 
@@ -9652,7 +12994,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.6.3 ###
     #########################
     tituloTabla42363 = doc.add_paragraph()
-    dti42363 = tituloTabla42363.add_run('\nTabla 4.x.- Índice de diversidad de estrato de las arbbustivas ___')
+    dti42363 = tituloTabla42363.add_run(f'\nTabla 4.x.- Índice de diversidad de estrato de las arbbustivas {segundo_codigo}')
     dti42363_format = tituloTabla42363.paragraph_format
     dti42363_format.line_spacing = 1.15
     dti42363_format.space_after = 0
@@ -9706,7 +13048,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.6.3 ###
     #########################
     tituloGrafico42363 = doc.add_paragraph()
-    dgi42363 = tituloGrafico42363.add_run('Grafica 4.8.- Densidad de Estrato Herbaceo ___.')
+    dgi42363 = tituloGrafico42363.add_run(f'Grafica 4.8.- Densidad de Estrato Herbaceo {segundo_codigo}.')
     dgi42363_format = tituloGrafico42363.paragraph_format
     dgi42363_format.line_spacing = 1.15
     dgi42363_format.space_after = 0
@@ -9738,7 +13080,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.6.3 ###
     #########################
     tituloTabla42363 = doc.add_paragraph()
-    dti42363 = tituloTabla42363.add_run('\nTabla 4.x.- Valor de abundancia de herbacéas ___ en el Sistema Ambiental.')
+    dti42363 = tituloTabla42363.add_run(f'\nTabla 4.x.- Valor de abundancia de herbacéas {segundo_codigo} en el Sistema Ambiental.')
     dti42363_format = tituloTabla42363.paragraph_format
     dti42363_format.line_spacing = 1.15
     dti42363_format.space_after = 0
@@ -9797,7 +13139,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.6.3 ###
     #########################
     tituloGrafico42363 = doc.add_paragraph()
-    dgi42363 = tituloGrafico42363.add_run('Grafica 4.9.- Valor de Importancia Estrato Herbácea ___.')
+    dgi42363 = tituloGrafico42363.add_run(f'Grafica 4.9.- Valor de Importancia Estrato Herbácea {segundo_codigo}.')
     dgi42363_format = tituloGrafico42363.paragraph_format
     dgi42363_format.line_spacing = 1.15
     dgi42363_format.space_after = 0
@@ -9829,7 +13171,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.6.3 ###
     #########################
     tituloTabla42363 = doc.add_paragraph()
-    dti42363 = tituloTabla42363.add_run('\nTabla 4.x.- Valor de abundancia de herbacéas ___ en el Sistema Ambiental.')
+    dti42363 = tituloTabla42363.add_run(f'\nTabla 4.x.- Valor de abundancia de herbacéas {segundo_codigo} en el Sistema Ambiental.')
     dti42363_format = tituloTabla42363.paragraph_format
     dti42363_format.line_spacing = 1.15
     dti42363_format.space_after = 0
@@ -9869,7 +13211,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.6.3 ###
     #########################
     tituloGrafico42363 = doc.add_paragraph()
-    dgi42363 = tituloGrafico42363.add_run('Grafica 4.9.- Abundancia del estrato Herbáceas ____')
+    dgi42363 = tituloGrafico42363.add_run(f'Grafica 4.9.- Abundancia del estrato Herbáceas {segundo_codigo}')
     dgi42363_format = tituloGrafico42363.paragraph_format
     dgi42363_format.line_spacing = 1.15
     dgi42363_format.space_after = 0
@@ -10189,10 +13531,89 @@ def capitulo4():
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+    
+    #########################
     ### Titulo del capitulo 4.2.3.6.4 ###
     #########################
     capitulo42364 = doc.add_paragraph()
-    i42364 = capitulo42364.add_run(f'\n{temasCapitulo4[1][2][4][9][3]}')
+    i42364 = capitulo42364.add_run(f'\nIV.2.3.6.4.- Análisis de diversidad del Estrato de las Gramíneas {segundo_codigo}')
     i42364_format = capitulo42364.paragraph_format
     i42364_format.line_spacing = 1.15
 
@@ -10205,7 +13626,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.6.4 ###
     #########################
     tituloTabla42364 = doc.add_paragraph()
-    dti42364 = tituloTabla42364.add_run('\nTabla 4.x.- Valor de densidad en gramíneas MDR en el Sistema Ambiental. ')
+    dti42364 = tituloTabla42364.add_run(f'\nTabla 4.x.- Valor de densidad en gramíneas {segundo_codigo} en el Sistema Ambiental. ')
     dti42364_format = tituloTabla42364.paragraph_format
     dti42364_format.line_spacing = 1.15
     dti42364_format.space_after = 0
@@ -10259,7 +13680,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.6.4 ###
     #########################
     tituloGrafico42364 = doc.add_paragraph()
-    dgi42364 = tituloGrafico42364.add_run('Grafica 4.10.- Densidad de gramíneas ____.')
+    dgi42364 = tituloGrafico42364.add_run(f'Grafica 4.10.- Densidad de gramíneas {segundo_codigo}.')
     dgi42364_format = tituloGrafico42364.paragraph_format
     dgi42364_format.line_spacing = 1.15
     dgi42364_format.space_after = 0
@@ -10306,7 +13727,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.6.4 ###
     #########################
     tituloTabla42364 = doc.add_paragraph()
-    dti42364 = tituloTabla42364.add_run('\nTabla 4.X.-	Valor de importancia de gramíneas ___ en el Sistema Ambiental.')
+    dti42364 = tituloTabla42364.add_run(f'\nTabla 4.X.-	Valor de importancia de gramíneas {segundo_codigo} en el Sistema Ambiental.')
     dti42364_format = tituloTabla42364.paragraph_format
     dti42364_format.line_spacing = 1.15
     dti42364_format.space_after = 0
@@ -10365,7 +13786,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.6.4 ###
     #########################
     tituloGrafico42364 = doc.add_paragraph()
-    dgi42364 = tituloGrafico42364.add_run('Grafica 4.12.- Abundancia estrato de gramíneas ____.')
+    dgi42364 = tituloGrafico42364.add_run(f'Grafica 4.12.- Abundancia estrato de gramíneas {segundo_codigo}.')
     dgi42364_format = tituloGrafico42364.paragraph_format
     dgi42364_format.line_spacing = 1.15
     dgi42364_format.space_after = 0
@@ -10416,7 +13837,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.6.4 ###
     #########################
     tituloTabla42364 = doc.add_paragraph()
-    dti42364 = tituloTabla42364.add_run('\nTabla 4.x.- Valor de abundancia de herbacéas ___ en el Sistema Ambiental.')
+    dti42364 = tituloTabla42364.add_run(f'\nTabla 4.x.- Valor de abundancia de herbacéas {segundo_codigo} en el Sistema Ambiental.')
     dti42364_format = tituloTabla42364.paragraph_format
     dti42364_format.line_spacing = 1.15
     dti42364_format.space_after = 0
@@ -10456,7 +13877,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.6.4 ###
     #########################
     tituloGrafico42364 = doc.add_paragraph()
-    dgi42364 = tituloGrafico42364.add_run('Grafica 4.9.- Abundancia del estrato Herbáceas ____')
+    dgi42364 = tituloGrafico42364.add_run(f'Grafica 4.13.- Abundancia del estrato Herbáceas {segundo_codigo}')
     dgi42364_format = tituloGrafico42364.paragraph_format
     dgi42364_format.line_spacing = 1.15
     dgi42364_format.space_after = 0
@@ -10762,10 +14183,89 @@ def capitulo4():
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+    
+    #########################
     ### Titulo del capitulo 4.2.3.6.5 ###
     #########################
     capitulo42365 = doc.add_paragraph()
-    i42365 = capitulo42365.add_run(f'\n{temasCapitulo4[1][2][4][9][4]}')
+    i42365 = capitulo42365.add_run(f'\nIV.2.3.6.5.- Análisis de diversidad del Estrato de las Suculentas {segundo_codigo}')
     i42365_format = capitulo42365.paragraph_format
     i42365_format.line_spacing = 1.15
 
@@ -10778,7 +14278,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.6.5 ###
     #########################
     tituloTabla42365 = doc.add_paragraph()
-    dti42365 = tituloTabla42365.add_run('\nTabla 4.x.- Valor de densidad de suculentas MDR en el Sistema Ambiental. ')
+    dti42365 = tituloTabla42365.add_run(f'\nTabla 4.x.- Valor de densidad de suculentas {segundo_codigo} en el Sistema Ambiental. ')
     dti42365_format = tituloTabla42365.paragraph_format
     dti42365_format.line_spacing = 1.15
     dti42365_format.space_after = 0
@@ -10832,7 +14332,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.6.5 ###
     #########################
     tituloGrafico42365 = doc.add_paragraph()
-    dgi42365 = tituloGrafico42365.add_run('Grafica 4.10.- Densidad de gramíneas ____.')
+    dgi42365 = tituloGrafico42365.add_run(f'Grafica 4.10.- Densidad de gramíneas {segundo_codigo}.')
     dgi42365_format = tituloGrafico42365.paragraph_format
     dgi42365_format.line_spacing = 1.15
     dgi42365_format.space_after = 0
@@ -10879,7 +14379,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.6.5 ###
     #########################
     tituloTabla42365 = doc.add_paragraph()
-    dti42365 = tituloTabla42365.add_run('\nTabla 4.X.-	Valor de importancia de suculentas ___ en el Sistema Ambiental.')
+    dti42365 = tituloTabla42365.add_run(f'\nTabla 4.X.-	Valor de importancia de suculentas {segundo_codigo} en el Sistema Ambiental.')
     dti42365_format = tituloTabla42365.paragraph_format
     dti42365_format.line_spacing = 1.15
     dti42365_format.space_after = 0
@@ -10938,7 +14438,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.6.5 ###
     #########################
     tituloGrafico42365 = doc.add_paragraph()
-    dgi42365 = tituloGrafico42365.add_run('Grafica 4.12.- Abundancia estrato de gramíneas ____.')
+    dgi42365 = tituloGrafico42365.add_run(f'Grafica 4.12.- Abundancia estrato de gramíneas {segundo_codigo}.')
     dgi42365_format = tituloGrafico42365.paragraph_format
     dgi42365_format.line_spacing = 1.15
     dgi42365_format.space_after = 0
@@ -11029,7 +14529,7 @@ def capitulo4():
     ### Titulo de la grafica del capitulo 4.2.3.6.5 ###
     #########################
     tituloGrafico42365 = doc.add_paragraph()
-    dgi42365 = tituloGrafico42365.add_run('Grafica 4.9.- Abundancia del estrato Herbáceas ____')
+    dgi42365 = tituloGrafico42365.add_run(f'Grafica 4.9.- Abundancia del estrato Herbáceas {segundo_codigo}')
     dgi42365_format = tituloGrafico42365.paragraph_format
     dgi42365_format.line_spacing = 1.15
     dgi42365_format.space_after = 0
@@ -11335,10 +14835,89 @@ def capitulo4():
     ########################################################################################################################################################################
 
     #########################
+    ### Llamar a la tabla de la bd ###
+    #########################
+    """
+        *******************************
+            Tabla de Vegetacion Microcuenca
+        *******************************
+    """
+    vegetacion_micro = Vegetacion.objects.filter(
+        nom_micro='24-103-01-002'
+    )
+
+    # Diccionario para agrupar por rango 'grados'
+    agrupados = defaultdict(lambda: {'superficie': 0, 'km2': 0})
+
+    # Suma total general para calcular porcentaje después
+    total_superficie = 0
+    total_km2 = 0
+
+    # Agrupar por rango y sumar superficies y km2
+    for fila in vegetacion_micro:
+        vegetacion = fila.descripcion  # ej: 'NORTE'
+        try:
+            superficie = float(fila.superficie)
+        except (TypeError, ValueError):
+            superficie = 0
+        try:
+            km2 = float(fila.km2)
+        except (TypeError, ValueError):
+            km2 = 0
+
+        agrupados[vegetacion]['superficie'] += superficie
+        agrupados[vegetacion]['km2'] += km2
+        agrupados[vegetacion]['codigo'] = fila.cue_union
+
+        total_superficie += superficie
+        total_km2 += km2
+
+    # Ahora calculamos porcentaje de cada rango según superficie (o km2 si quieres)
+    resultado = []
+    for vegetacion, valores in agrupados.items():
+        porcentaje_superficie = (valores['superficie'] / total_superficie * 100) if total_superficie > 0 else 0
+        porcentaje_km2 = (valores['km2'] / total_km2 * 100) if total_km2 > 0 else 0
+        resultado.append({
+            'vegetacion': vegetacion,
+            'codigo': valores['codigo'],
+            'superficie': valores['superficie'],
+            'km2': valores['km2'],
+            'porcentaje_superficie': porcentaje_superficie,
+            'porcentaje_km2': porcentaje_km2,
+        })
+
+    #resultado.sort(key=lambda x: float(x['rango'].split('-')[0].replace('°', '').strip()))
+
+    # Devuelve el resultado
+    maxima_km2 = max(item['km2'] for item in resultado)
+    vegetacion_maxima = next(item['vegetacion'] for item in resultado if item['km2'] == maxima_km2)
+    codigo_maxima = next(item['codigo'] for item in resultado if item['km2'] == maxima_km2)
+    porcentaje_maximo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == maxima_km2)
+
+    minima_km2 = min(item['km2'] for item in resultado)
+    vegetacion_minima = next(item['vegetacion'] for item in resultado if item['km2'] == minima_km2)
+    codigo_minima = next(item['codigo'] for item in resultado if item['km2'] == minima_km2)
+    porcentaje_minimo = next(item['porcentaje_km2'] for item in resultado if item['km2'] == minima_km2)
+
+    # Ordenar por km2 de mayor a menor
+    ordenados = sorted(resultado, key=lambda x: x['km2'], reverse=True)
+
+    # Asegurarse de que haya al menos 2 elementos
+    if len(ordenados) >= 2:
+        segundo = ordenados[1]
+        segundo_codigo = segundo['codigo']
+        segundo_vegetacion = segundo['vegetacion']
+        segundo_porcentaje = segundo['porcentaje_km2']
+    else:
+        segundo_codigo = "N/A"
+        segundo_vegetacion = "N/A"
+        segundo_porcentaje = 0
+    
+    #########################
     ### Titulo del capitulo 4.2.3.6.6 ###
     #########################
     capitulo42366 = doc.add_paragraph()
-    i42366 = capitulo42366.add_run(f'\n{temasCapitulo4[1][2][4][9][5]}')
+    i42366 = capitulo42366.add_run(f'\nIV.2.3.6.6.- Análisis de los estratos {segundo_codigo}')
     i42366_format = capitulo42366.paragraph_format
     i42366_format.line_spacing = 1.15
 
@@ -11365,7 +14944,7 @@ def capitulo4():
     ### Titulo de la tabla del capitulo 4.2.3.6.6 ###
     #########################
     tituloTabla42366 = doc.add_paragraph()
-    dti42366 = tituloTabla42366.add_run('\nTabla 4.X.- Rangos y valores de los índices MDR en el sistema ambiental')
+    dti42366 = tituloTabla42366.add_run(f'\nTabla 4.X.- Rangos y valores de los índices {segundo_codigo} en el sistema ambiental')
     dti42366_format = tituloTabla42366.paragraph_format
     dti42366_format.line_spacing = 1.15
     dti42366_format.space_after = 0
@@ -11397,7 +14976,7 @@ def capitulo4():
     ### Titulo del capitulo 4.2.3.7 ###
     #########################
     capitulo4237 = doc.add_paragraph()
-    i4237 = capitulo4237.add_run(f'{temasCapitulo4[1][2][4][10]}')
+    i4237 = capitulo4237.add_run(f'IV.2.3.7.- Fauna.')
     i4237_format = capitulo4237.paragraph_format
     i4237_format.line_spacing = 1.15
 
@@ -11432,7 +15011,8 @@ def capitulo4():
     di4237.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     di4237 = doc.add_paragraph()
-    descripcionCapitulo4237 = di4237.add_run('Por su extensión territorial el Estado de Coahuila ocupa el tercer lugar a nivel nacional, en la cual se pueden encontrar una gran diversidad de especies propia de la región árida y semiárida del Desierto Chihuahuense, desafortunadamente la riqueza natural se ha ido perdiendo paulatinamente por diversos factores, la Legislación Ambiental estatal señala que se debe salvaguardar la diversidad genética de las especies silvestres de las que depende la continuidad evolutiva, asegurar la preservación y el aprovechamiento sustentable de la biodiversidad del territorio. En lo que representa a la fauna silvestre La Comisión Nacional de la Biodiversidad (CONABIO) reporta que en la entidad existen 275 spp de aves, 107 spp de mamíferos y 24 spp de reptiles. ____________________ ____________________ ____________________ ____________________ ____________________ ____________________ ____________________ ____________________.')
+    descripcionCapitulo4237 = di4237.add_run('Por su extensión territorial el Estado de Coahuila ocupa el tercer lugar a nivel nacional, en la cual se pueden encontrar una gran diversidad de especies propia de la región árida y semiárida del Desierto Chihuahuense, desafortunadamente la riqueza natural se ha ido perdiendo paulatinamente por diversos factores, la Legislación Ambiental estatal señala que se debe salvaguardar la diversidad genética de las especies silvestres de las que depende la continuidad evolutiva, asegurar la preservación y el aprovechamiento sustentable de la biodiversidad del territorio. En lo que representa a la fauna silvestre La Comisión Nacional de la Biodiversidad (CONABIO) reporta que en la entidad existen 275 spp de aves, 107 spp de mamíferos y 24 spp de reptiles. ____________________ ____________________ ____________________ ____________________ ____________________ ____________________ ____________________ ____________________.'
+                                             'Algunas de las especies faunísticas de distribución común en la zona, y su área de influencia hacia la sierra, aun considerando el acrecentado desarrollo urbano, serían principalmente mamíferos como _______ (), _____ (__), ______ (_____), ______________________________ (), __________________ (); aves como ____ (________), ______ (), _________________ (___________), ______________ (), ____________________ (), _________________ (___________), ________ (), __________________ (), ______________ (). Aunque no fue determinada la presencia de reptiles durante las inspecciones en el predio, es común la distribución de algunos reptiles como la ____________________ (___________________), __________________________ (), ___________________ (), ___________________ (_______________________), por mencionar algunos.')
     descripcionCapitulo4237_format = di4237.paragraph_format
     descripcionCapitulo4237_format.line_spacing = 1.15
     descripcionCapitulo4237_format.space_after = 0
