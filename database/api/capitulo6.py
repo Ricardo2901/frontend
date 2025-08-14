@@ -16,6 +16,70 @@ from docx.enum.section import WD_SECTION        # Para secciones del documento
 from docx.shared import RGBColor                # Para colores RGB
 from docx.enum.table import WD_ROW_HEIGHT_RULE  # Para el alto de las filas de las tablas
 
+"""
+    ============================================================
+    Archivos del REST framework
+    ============================================================
+
+    Las siguientes importaciones son para el framework de REST, el cual se tienen que insertan en la 
+    parte de la documentacion. Todas estas importaciones son parte del framework de REST y son los datos
+    que se van a extraer en la base de datos
+   
+"""
+from django.db.models import Max
+import os
+import django
+import sys
+
+from django.conf import settings
+from django.db.models.functions import Trim
+from django.db.models import Sum
+from collections import defaultdict
+import re
+
+# Ruta a la raíz del proyecto (donde está manage.py)
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(BASE_DIR)
+
+# Configura Django
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "database.settings")  # ← Cambia a tu nombre real
+django.setup()
+
+from api.models import Climas
+from api.models import DescripcionClimas
+from api.models import DescripcionErosion
+from api.models import DescripcionGeologia
+from api.models import DescripcionProvincias
+from api.models import DescripcionSubprovincias
+from api.models import DescripcionSuelo
+from api.models import DescripcionTiposErosion
+from api.models import DescripcionTopografia
+from api.models import DescripcionVegetacion
+from api.models import ElevacionMicrocuenca
+from api.models import EspeciesVegetacion
+from api.models import Evaporacion
+from api.models import ExposicionMicro
+from api.models import Municipios
+from api.models import PendienteMicro
+from api.models import Precipitacion
+from api.models import ProvinciasMicrocuencas
+from api.models import RiesgoCliclones
+from api.models import RiesgoGranizada
+from api.models import RiesgoHeladas
+from api.models import RiesgoInundacion
+from api.models import RiesgoPrecipitacion
+from api.models import RiesgoSequia
+from api.models import RiesgoSismo
+from api.models import RiesgoTormenta
+from api.models import RiesgoTornado
+from api.models import SubprovinciasMicrocuencas
+from api.models import Temperatura
+from api.models import TipoErosion
+from api.models import TipoGeologia
+from api.models import TipoSuelo
+from api.models import TipoTopografia
+from api.models import TopominosMicro
+from api.models import Vegetacion
 
 """ 
     ============================================================
