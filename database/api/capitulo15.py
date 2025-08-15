@@ -468,7 +468,7 @@ def capitulo15():
     cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
 
     cell = tabla15b.cell(2, 0)
-    t15b = cell.paragraphs[0].add_run('Representante Legal Jibe Construcciones y Pavimentos')
+    t15b = cell.paragraphs[0].add_run('Representante Legal de la Empresa Cliente')
     t15b.font.size = Pt(12)
     t15b.font.name = 'Arial'
     cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -532,7 +532,7 @@ def capitulo15():
     cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
 
     cell = tabla15b.cell(2, 0)
-    t15b = cell.paragraphs[0].add_run('Representante Legal Jibe Construcciones y Pavimentos')
+    t15b = cell.paragraphs[0].add_run('Representante Legal de la Empresa Cliente')
     t15b.font.size = Pt(12)
     t15b.font.name = 'Arial'
     cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
