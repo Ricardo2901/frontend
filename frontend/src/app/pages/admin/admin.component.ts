@@ -14,6 +14,7 @@ declare var bootstrap: any;
   templateUrl: './admin.component.html',
   styleUrl: './admin.component.css'
 })
+
 export class AdminComponent {
 
   /* //Es para mostrar las rutas en tiempo real

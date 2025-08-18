@@ -1,34 +1,105 @@
+/* 
+  ========================================================================================
+    Importacion para rutas de la aplicacion y su funcionamiento
+  ========================================================================================
+*/
 import { Routes } from '@angular/router';
-import { UsuariosComponent } from './components/usuarios/usuarios.component';
 
-/* Para Super Usuarios */
+/* 
+  ========================================================================================
+    Importacion de pruebas
+  ========================================================================================
+*/
+//import { UsuariosComponent } from './components/usuarios/usuarios.component';
 
-/* Para Administradores */
+/* 
+  ========================================================================================
+    Importacion para inicio de sesion
+  ========================================================================================
+*/
+import { MainLoginComponent } from './pages/main-login/main-login.component';
+
+/* 
+  ========================================================================================
+    Importacion para superusuarios
+  ========================================================================================
+*/
+import { SpradmComponent } from './pages/spradm/spradm.component';
+import { SpradmProyectosComponent } from './pages/spradm/spradm-proyectos/spradm-proyectos.component';
+import { SpradmAboutComponent } from './pages/spradm/spradm-about/spradm-about.component';
+import { SpradmUsersComponent } from './pages/spradm/spradm-users/spradm-users.component';
+import { SpradmAdminComponent } from './pages/spradm/spradm-admin/spradm-admin.component';
+import { SpradmSpradmComponent } from './pages/spradm/spradm-spradm/spradm-spradm.component';
+import { SpradmProfileComponent } from './pages/spradm/spradm-profile/spradm-profile.component';
+import { SpradmHomeComponent } from './pages/spradm/spradm-home/spradm-home.component';
+import { SpradmPrivateFilesComponent } from './pages/spradm/spradm-private-files/spradm-private-files.component';
+import { SpradmHelpComponent } from './pages/spradm/spradm-help/spradm-help.component';
+
+/* 
+  ========================================================================================
+    Importacion para administradores
+  ========================================================================================
+*/
 import { AdminComponent } from './pages/admin/admin.component';
-import { AdminHomeComponent } from './pages/admin/admin-home/admin-home.component';
+import { AdminProyectosComponent } from './pages/admin/admin-proyectos/admin-proyectos.component';
 import { AdminAboutComponent } from './pages/admin/admin-about/admin-about.component';
-import { AdminAdminsComponent } from './pages/admin/admin-admins/admin-admins.component';
 import { AdminUsersComponent } from './pages/admin/admin-users/admin-users.component';
-import { AdminHelpComponent } from './pages/admin/admin-help/admin-help.component';
+import { AdminAdminsComponent } from './pages/admin/admin-admins/admin-admins.component';
 import { AdminProfileComponent } from './pages/admin/admin-profile/admin-profile.component';
-import { AdminProjectComponent } from './pages/admin/admin-project/admin-project.component';
+import { AdminHomeComponent } from './pages/admin/admin-home/admin-home.component';
 import { AdminPrivateFilesComponent } from './pages/admin/admin-private-files/admin-private-files.component';
+import { AdminHelpComponent } from './pages/admin/admin-help/admin-help.component';
 
-/* Para Usuarios */
-import { UserAboutComponent } from './pages/user/user-about/user-about.component';
-import { UserHelpComponent } from './pages/user/user-help/user-help.component';
-import { UserHomeComponent } from './pages/user/user-home/user-home.component';
-import { UserProfileComponent } from './pages/user/user-profile/user-profile.component';
-import { UserProjectComponent } from './pages/user/user-project/user-project.component';
+/* 
+  ========================================================================================
+    Importacion para usuarios
+  ========================================================================================
+*/
 import { UserComponent } from './pages/user/user.component';
+import { UserProyectosComponent } from './pages/user/user-proyectos/user-proyectos.component';
+import { UserAboutComponent } from './pages/user/user-about/user-about.component';
+import { UserProfileComponent } from './pages/user/user-profile/user-profile.component';
+import { UserHomeComponent } from './pages/user/user-home/user-home.component';
+import { UserPrivateFilesComponent } from './pages/user/user-private-files/user-private-files.component';
+import { UserHelpComponent } from './pages/user/user-help/user-help.component';
 
 
 export const routes: Routes = [
-  { path: 'usuarios', component: UsuariosComponent },
-  { path: '', redirectTo: '/usuarios', pathMatch: 'full' }, // redirige al inicio
+  { path: 'mayma/login', component: MainLoginComponent }, // ruta de inicio de sesión
+  { path: '', redirectTo: '/mayma/login', pathMatch: 'full' }, // redirige al inicio
 
-  /* Rutas para Administradores */
+  /* 
+    ========================================================================================
+      Rutas para superusuarios
+    ========================================================================================
+  */
   { path: 'mayma/auth/spradm', 
+    component: SpradmComponent,
+    children: [
+      { path: '', redirectTo: 'home', pathMatch: 'full' },
+      { path: 'home', component: SpradmHomeComponent },
+      { path: 'about', component: SpradmAboutComponent },
+      { path: 'spradm', component: SpradmSpradmComponent },
+      { path: 'admins', component: SpradmAdminComponent },
+      { path: 'users', component: SpradmUsersComponent },
+      { path: 'help', component: SpradmHelpComponent },
+      { path: 'profile', component: SpradmProfileComponent },
+      { path: 'private-files', component: SpradmPrivateFilesComponent },
+      { path: 'project', 
+        component: SpradmProyectosComponent,
+        children: [
+
+        ]
+      },
+    ]
+  },
+
+  /* 
+    ========================================================================================
+      Rutas para Administradores
+    ========================================================================================
+  */
+  { path: 'mayma/auth/admin', 
     component: AdminComponent,
     children: [
       { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -38,8 +109,9 @@ export const routes: Routes = [
       { path: 'users', component: AdminUsersComponent },
       { path: 'help', component: AdminHelpComponent },
       { path: 'profile', component: AdminProfileComponent },
+      { path: 'private-files', component: AdminPrivateFilesComponent },
       { path: 'project', 
-        component: AdminProjectComponent,
+        component: AdminProyectosComponent,
         children: [
           { path: 'list', component: AdminPrivateFilesComponent },
           { path: 'name', component: AdminPrivateFilesComponent },
@@ -66,10 +138,14 @@ export const routes: Routes = [
         ]
           */
       },
-      { path: 'private-files', component: AdminPrivateFilesComponent}
-    ] },
+    ] 
+  },
 
-  /* Rutas para Usuarios */
+  /* 
+    ========================================================================================
+      Rutas para Usuarios
+    ========================================================================================
+  */
   { path: 'mayma/auth/usr',
     component: UserComponent,
     children: [
@@ -78,7 +154,8 @@ export const routes: Routes = [
       { path: 'help', component: UserHelpComponent },
       { path: 'home', component: UserHomeComponent },
       { path: 'profile', component: UserProfileComponent },
-      { path: 'project', component: UserProjectComponent },
+      { path: 'project', component: UserProyectosComponent },
+      { path: 'private-files', component: UserPrivateFilesComponent },
     ]
   }
 ];

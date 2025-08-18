@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-import { Title } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-admin-home',
@@ -9,11 +8,5 @@ import { Title } from '@angular/platform-browser';
   styleUrl: './admin-home.component.css'
 })
 export class AdminHomeComponent {
-  constructor(private titleService: Title) {
-    this.setTituloPagina('Inicio | Administrador');
-  }
 
-  setTituloPagina(titulo: string) {
-    this.titleService.setTitle(titulo);
-  }
 }

@@ -1,5 +1,11 @@
-import { Component, ViewChild, ElementRef } from '@angular/core';
-import { Router, RouterModule, RouterOutlet } from '@angular/router';
+import { Component } from '@angular/core';
+import { RouterModule, NavigationEnd } from '@angular/router';
+import { Router } from '@angular/router';
+import { Offcanvas } from 'bootstrap';
+import { Title } from '@angular/platform-browser';
+import { filter } from 'rxjs';
+
+declare var bootstrap: any;
 
 @Component({
   selector: 'app-user',
@@ -9,6 +15,16 @@ import { Router, RouterModule, RouterOutlet } from '@angular/router';
   styleUrl: './user.component.css'
 })
 export class UserComponent {
+
+  cerrarOffcanvas() {
+      const offcanvasElement = document.getElementById('offcanvasNavbar'); // ID real de tu offcanvas
+      if (offcanvasElement) {
+        const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement);
+        if (offcanvas) {
+          offcanvas.hide(); // Cierra el offcanvas
+        }
+      }
+    }
 
    procesarComando(event: KeyboardEvent) {
     if (event.key === 'Enter') {

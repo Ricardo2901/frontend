@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+/*import { Component, OnInit } from '@angular/core';
 import { UsuarioService, Usuario } from '../../services/usuario.service';
 import { CommonModule } from '@angular/common';
 
@@ -21,3 +21,4 @@ export class UsuariosComponent implements OnInit {
     });
   }
 }
+  */

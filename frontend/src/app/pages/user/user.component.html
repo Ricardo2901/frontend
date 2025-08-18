@@ -1,6 +1,6 @@
 <nav class="navbar bg-body-secondary fixed-top">
     <div class="container-fluid">
-        <a class="navbar-brand" href="#">
+        <a class="navbar-brand" href="#" [routerLink]="['./home']">
             <img src="" alt="Logo" width="auto" height="30" class="d-inline-block align-text-top">
             Mayma Ambiental
         </a>
@@ -15,25 +15,25 @@
             <div class="offcanvas-body">
                 <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href=""><i class="fas fa-house"></i> Inicio</a>
+                        <a class="nav-link active" aria-current="page" [routerLink]="['./home']" (click)="cerrarOffcanvas()"><i class="fas fa-house"></i> Inicio</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href=""><i class="far fa-file-lines"></i> Proyectos</a>
+                        <a class="nav-link" href="" [routerLink]="['./project']" (click)="cerrarOffcanvas()"><i class="far fa-file-lines"></i> Proyectos</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href=""><i class="far fa-user"></i> Ver Perfil</a>
+                        <a class="nav-link" href="" [routerLink]="['./profile']" (click)="cerrarOffcanvas()"><i class="far fa-user"></i> Ver Perfil</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href=""><i class="far fa-folder"></i> Archivos Privados</a>
+                        <a class="nav-link" href="" [routerLink]="['./private-files']" (click)="cerrarOffcanvas()"><i class="far fa-folder"></i> Archivos Privados</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href=""><i class="far fa-circle-question"></i> Acerca de la aplicacion</a>
+                        <a class="nav-link" href="" [routerLink]="['./about']" (click)="cerrarOffcanvas()"><i class="far fa-circle-question"></i> Acerca de la aplicacion</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="%" data-bs-toggle="modal" data-bs-target="#abrirConsola"><i class="fas fa-terminal"></i> Abrir Consola</a>
+                        <a class="nav-link" href="%" data-bs-toggle="modal" data-bs-target="#abrirConsola" (click)="cerrarOffcanvas()"><i class="fas fa-terminal"></i> Abrir Consola</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-power-off"></i> Ayuda</a>
+                        <a class="nav-link" href="#" [routerLink]="['./help']" (click)="cerrarOffcanvas()"><i class="fas fa-power-off" ></i> Ayuda</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#"><i class="fas fa-power-off"></i> Salir</a>
@@ -46,7 +46,7 @@
 
 <!-- Modal de la terminal -->
 <div class="modal fade" id="abrirConsola" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable" style="height: 90vh;">
+    <div class="modal-dialog modal-fullscreen modal-dialog-scrollable" style="height: 90vh;">
         <div class="modal-content">
             <div class="modal-header">
                 <h1 class="modal-title fs-5" id="staticBackdropLabel">Terminal del Sistema</h1>
@@ -56,7 +56,7 @@
             <div class="modal-body" id="terminal-body" style="background-color: black; color: #00FF00; font-family: Consolas; overflow-y: auto;">
                 <div #terminalOutput id="terminal-output" style="white-space: pre-wrap;"></div>
                 <div class="d-flex mt-2">
-                    <span class="me-2">mayma/user/username~$</span>
+                    <span class="me-2">mayma/user/users~$</span>
                     <input
                         #terminalInput
                         type="text"
