@@ -26,7 +26,7 @@ export class SpradmUsersComponent implements OnInit {
   });
 
   updateUserForm = new FormGroup({
-    id: new FormControl(null),
+    id: new FormControl<number | undefined>(undefined),
     username: new FormControl(''),
     name: new FormControl(''),
     email: new FormControl(''),
