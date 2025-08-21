@@ -22,6 +22,7 @@ from docx.shared import RGBColor                # Para colores RGB
     ============================================================
 """
 from utils import cell_background_color         # Importar la función para cambiar el color de fondo de las celdas
+import capitulo1
 
 def capitulo2():
     doc = Document()        # -----> Variable global del documento
@@ -848,6 +849,11 @@ def capitulo2():
                 -> Editar el pie de pagina.
                     * El pie de pagina debe tener el nombre del cliente
     """
-    doc.save("CAPITULO 2 DTU EXTRACCION DE MATERIAL PETRO.docx")
+    if capitulo1.proyecto == 'EXTRACCION DE MATERIAL PETRO':
+        doc.save("CAPITULO 2 DTU EXTRACCION DE MATERIAL PETRO.docx")
+    elif capitulo2.proyecto == 'FRACCIONAMIENTO URBANO':
+        doc.save("CAPITULO 2 DTU FRACCIONAMIENTO URBANO.docx")
+    elif capitulo2.proyecto == 'CONSTRUCCION DE CAMPESTRES':
+        doc.save("CAPITULO 2 DTU CONSTRUCCION DE CAMPESTRES.docx")
 
 capitulo2()

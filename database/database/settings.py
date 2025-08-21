@@ -44,6 +44,12 @@ INSTALLED_APPS = [
     'api', # importante
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',   # <- aquí arriba
@@ -57,9 +63,9 @@ MIDDLEWARE = [
 
 CORS_ALLOW_ALL_ORIGINS = True  # O configura dominios específicos
 
-#CORS_ALLOWED_ORIGINS = [
-    #"http://localhost:4200",
-#]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:4200",
+]
 
 
 ROOT_URLCONF = 'database.urls'

@@ -21,18 +21,38 @@ export class MainLoginComponent {
 
   constructor(private authService: AuthService, private router: Router) {}
 
+  ngOnInit() {
+    // Redirige automáticamente si ya hay usuario logueado
+    const user = this.authService.getCurrentUser();
+    if (user) {
+      this.redirigirSegunTipo(user.type_user);
+    }
+  }
+
   onSubmit() {
-    this.authService.login(this.username, this.password).subscribe(
-      { 
-        next: (res: any) => {
-          this.authService.guardarToken(res.token); // Guarda el token en el almacenamiento local
-          this.router.navigate(['/mayma/auth/spradm/home']); // Redirige al usuario a la página de inicio
-        },
-        error: (err: any) => {
-          this.errorMessage = 'Usuario o contraseña incorrectos'; // Muestra un mensaje de error si las credenciales son incorrectas
-          console.error(err);
-        }
+    this.authService.login(this.username, this.password).subscribe({
+      next: (user) => {
+        this.redirigirSegunTipo(user.type_user);
+      },
+      error: (error) => {
+        this.errorMessage = 'Credenciales incorrectas. Por favor, inténtelo de nuevo.';
+        console.error('Error de autenticación:', error);
       }
-    )
+    });
+  }
+
+  private redirigirSegunTipo(type_user: string) {
+    if (type_user === 'Superusuario') {
+      this.router.navigate(['/mayma/auth/spradm']);
+    } else if (type_user === 'Administrador') {
+      this.router.navigate(['/mayma/auth/admin']);
+    } else if (type_user === 'Usuario') {
+      this.router.navigate(['/mayma/auth/usr']);
+    }
+  }
+
+  onLogout() {
+    this.authService.logout();
+    this.router.navigate(['/mayma/login']);
   }
 }

@@ -1,20 +1,39 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterModule, NavigationEnd } from '@angular/router';
 import { Router } from '@angular/router';
 import { Offcanvas } from 'bootstrap';
 import { Title } from '@angular/platform-browser';
 import { filter } from 'rxjs';
+import { NgIf } from '@angular/common';
+import { tap } from 'rxjs/operators';
+import { AuthService } from '../../services/auth/auth.service';
 
 declare var bootstrap: any;
 
 @Component({
   selector: 'app-spradm',
   standalone: true,
-  imports: [RouterModule],
+  imports: [RouterModule, NgIf],
   templateUrl: './spradm.component.html',
   styleUrl: './spradm.component.css'
 })
-export class SpradmComponent {
+export class SpradmComponent implements OnInit {
+
+  username: string | null = '';
+
+  constructor(private authService: AuthService, private router: Router) {}
+
+  ngOnInit(): void {
+    const user = this.authService.getCurrentUser();
+    if (user) {
+      this.username = user.name; // o user.username según tu preferencia
+    }
+  }
+
+  onLogout() {
+    this.authService.logout();
+    this.router.navigate(['/mayma/login']);
+  }
 
   /* //Es para mostrar las rutas en tiempo real
     tituloSeccion = 'Inicio';

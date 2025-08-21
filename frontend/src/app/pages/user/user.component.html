@@ -9,7 +9,7 @@
         </button>
         <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
             <div class="offcanvas-header">
-                <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Nombre del Usuario</h5>
+                <h5 class="offcanvas-title" id="offcanvasNavbarLabel" *ngIf="username">{{ username }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body">
@@ -36,7 +36,7 @@
                         <a class="nav-link" href="#" [routerLink]="['./help']" (click)="cerrarOffcanvas()"><i class="fas fa-power-off" ></i> Ayuda</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-power-off"></i> Salir</a>
+                        <a class="nav-link" href="#" (click)="onLogout(); $event.preventDefault()"><i class="fas fa-power-off"></i> Salir</a>
                     </li>
                 </ul>
             </div>

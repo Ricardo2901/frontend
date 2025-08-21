@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 
 # Create your models here.
 class Climas(models.Model):
@@ -477,6 +478,43 @@ class TopominosMicro(models.Model):
         db_table = 'topominos_micro'
 
 
+class CustomUserManager(BaseUserManager):
+    def create_user(self, username, email, password=None):
+        if not email:
+            raise ValueError('El usuario debe tener un email')
+        user = self.model(username=username, email=self.normalize_email(email))
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, username, email, password):
+        user = self.create_user(username, email, password)
+        user.is_admin = True
+        user.save(using=self._db)
+        return user
+    
+
+class Users(AbstractBaseUser):
+    id = models.BigAutoField(primary_key=True)
+    username = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    email = models.CharField(unique=True, max_length=255)
+    email_verified_at = models.DateTimeField(blank=True, null=True)
+    password = models.CharField(max_length=255)
+    avatar = models.CharField(max_length=255, blank=True, null=True)
+    remember_token = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+    last_login = models.DateTimeField(blank=True, null=True)
+    is_active = models.IntegerField()
+    type_user = models.CharField(max_length=255)
+    rol = models.CharField(max_length=255)
+
+    class Meta:
+        managed = False
+        db_table = 'users'
+
+
 class Vegetacion(models.Model):
     edo = models.CharField(max_length=45, blank=True, null=True)
     municipio = models.CharField(max_length=45, blank=True, null=True)
@@ -490,3 +528,4 @@ class Vegetacion(models.Model):
     class Meta:
         managed = False
         db_table = 'vegetacion'
+        

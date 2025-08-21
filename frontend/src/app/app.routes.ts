@@ -4,6 +4,7 @@
   ========================================================================================
 */
 import { Routes } from '@angular/router';
+import { RoleGuard } from './guards/role/role.guard';
 
 /* 
   ========================================================================================
@@ -66,7 +67,6 @@ import { UserHelpComponent } from './pages/user/user-help/user-help.component';
 
 export const routes: Routes = [
   { path: 'mayma/login', component: MainLoginComponent }, // ruta de inicio de sesión
-  { path: '', redirectTo: '/mayma/login', pathMatch: 'full' }, // redirige al inicio
 
   /* 
     ========================================================================================
@@ -75,6 +75,8 @@ export const routes: Routes = [
   */
   { path: 'mayma/auth/spradm', 
     component: SpradmComponent,
+    canActivate: [RoleGuard],
+    data: { roles: ['Superusuario'] }, // solo accesible por superusuarios
     children: [
       { path: '', redirectTo: 'home', pathMatch: 'full' },
       { path: 'home', component: SpradmHomeComponent },
@@ -101,6 +103,8 @@ export const routes: Routes = [
   */
   { path: 'mayma/auth/admin', 
     component: AdminComponent,
+    canActivate: [RoleGuard],
+    data: { roles: ['Administrador'] }, // solo accesible por administradores
     children: [
       { path: '', redirectTo: 'home', pathMatch: 'full' },
       { path: 'home', component: AdminHomeComponent },
@@ -148,6 +152,8 @@ export const routes: Routes = [
   */
   { path: 'mayma/auth/usr',
     component: UserComponent,
+    canActivate: [RoleGuard],
+    data: { roles: ['Usuario'] }, // solo accesible por usuarios
     children: [
       { path: '', redirectTo: 'home', pathMatch: 'full' },  // redirige a home
       { path: 'about', component: UserAboutComponent },
@@ -157,5 +163,16 @@ export const routes: Routes = [
       { path: 'project', component: UserProyectosComponent },
       { path: 'private-files', component: UserPrivateFilesComponent },
     ]
-  }
+  },
+
+  /* 
+    ========================================================================================
+      Rutas por defecto:
+
+      * Esta ruta se ejecuta si no se encuentra ninguna de las anteriores, no se recomienda
+        ponerla al inicio porque no va a funcionar como se espera.
+      * Se recomienda ponerla al final de todas las rutas.
+    ========================================================================================
+  */
+  { path: '**', redirectTo: '/mayma/login', pathMatch: 'full' }, // redirige al inicio
 ];
