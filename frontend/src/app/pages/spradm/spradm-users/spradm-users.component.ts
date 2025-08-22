@@ -35,6 +35,10 @@ export class SpradmUsersComponent implements OnInit {
     type_user: new FormControl('Usuario')
   });
 
+  deleteUserForm = new FormGroup({
+    id: new FormControl<number | undefined>(undefined),
+  });
+
   constructor(private usersService: UsersService) { }
 
   ngOnInit(): void {
@@ -48,6 +52,7 @@ export class SpradmUsersComponent implements OnInit {
     if(this.userForm.valid) {
       this.usersService.agregarUsuario(this.userForm.value).subscribe({
         next: (user) => {
+          this.ngOnInit()
           console.log('Usuario agregado:', user)
         },
         error: (err) => {
@@ -57,7 +62,7 @@ export class SpradmUsersComponent implements OnInit {
     }
   }
 
-  abrirModal(usuario: User) {
+  abrirModalUpdate(usuario: User) {
     this.updateUserForm.patchValue({
       id: usuario.id,
       username: usuario.username,
@@ -84,6 +89,27 @@ export class SpradmUsersComponent implements OnInit {
         // cerrar modal y refrescar lista
       },
       error: (err) => console.error('Error al actualizar usuario:', err)
+    });
+  }
+
+  abrirModalDelete(usuario: User) {
+    this.deleteUserForm.patchValue({
+      id: usuario.id,
+    })
+  }
+
+  eliminarUsuario() {
+    const id = Number(this.deleteUserForm.value.id); // convierte null a NaN si no hay valor
+    if (!id) return; // seguridad, no enviamos si no hay id válido
+
+    // clonamos el formulario y eliminamos id para enviar solo los datos
+    this.usersService.eliminarUsuario(id).subscribe({
+      next: (user) => {
+        this.ngOnInit();
+        console.log('Usuario eliminado', user);
+        // cerrar modal y refrescar lista
+      },
+      error: (err) => console.error('Error al eliminar usuario:', err)
     });
   }
 }

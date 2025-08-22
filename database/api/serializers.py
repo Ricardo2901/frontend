@@ -3,6 +3,8 @@ from rest_framework import serializers
 from .models import Climas
 from .models import Temperatura
 from .models import Users
+from .models import Projects
+from .models import PrivateFiles
 
 class ClimasSerializer(serializers.ModelSerializer):
     class Meta:
@@ -18,3 +20,15 @@ class UsuariosSerializer(serializers.ModelSerializer):
     class Meta:
         model = Users
         fields = ['id', 'username', 'email', 'name', 'created_at', 'updated_at', 'last_login', 'is_active', 'type_user', 'rol']
+
+class ProjectsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Projects
+        fields = '__all__'
+
+class PrivateFilesSerializer(serializers.ModelSerializer):
+    owner_username = serializers.CharField(source='owner.username', read_only=True)
+
+    class Meta:
+        model = PrivateFiles
+        fields = ['id', 'name', 'path', 'format', 'size', 'owner_username', 'created_at']

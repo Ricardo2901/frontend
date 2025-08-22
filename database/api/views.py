@@ -21,6 +21,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Climas
 from .models import Temperatura
 from .models import Users
+from .models import Projects
+from .models import PrivateFiles
 
 """
     ===========================================================================================================================================================
@@ -30,11 +32,19 @@ from .models import Users
 from .serializers import ClimasSerializer
 from .serializers import TemperaturaSerializer
 from .serializers import UsuariosSerializer
+from .serializers import ProjectsSerializer
+from .serializers import PrivateFilesSerializer
 
 """
     ===========================================================================================================================================================
         Vistas
     ===========================================================================================================================================================
+"""
+
+"""
+    $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+        Vistas Tecnicas
+    $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 """
 
 """
@@ -51,8 +61,107 @@ class TemperaturaViewSet(viewsets.ModelViewSet):
     serializer_class = TemperaturaSerializer
 
 """
+    $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+        CRUD (Create, Read, Update, Delete) de: Proyectos
+    $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+"""
+
+"""
     ####################################
-        Vistas de Usuarios
+        Vistas de los Proyectos
+    ####################################
+"""
+class ProjectsViewSet(viewsets.ModelViewSet):
+    queryset = Projects.objects.all()
+    serializer_class = ProjectsSerializer
+
+"""
+    ####################################
+        Crear: Proyectos
+    ####################################
+"""
+class RegisterProject(APIView):
+    def post(self, request):
+        id_proyecto = request.data.get('id_proyecto')
+        tipo_proyecto = request.data.get('tipo_proyecto')
+        estacion = request.data.get('estacion')
+        nom_micro = request.data.get('nom_micro')
+        storage = request.data.get('storage')
+
+        if not id_proyecto or not tipo_proyecto or not estacion or not nom_micro or not storage:
+            print("Faltan datos o no se puede crear el proyecto")
+            return Response({'error': 'Faltan datos'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        proyecto = Projects.objects.create(
+            id_proyecto=id_proyecto, 
+            tipo_proyecto=tipo_proyecto,
+            estacion=estacion,
+            nom_micro=nom_micro,
+            storage=storage,
+        )
+
+        serializer = ProjectsSerializer(proyecto)
+        print(Response(serializer.data), "Proyecto creado correctamente")
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+"""
+    ####################################
+        Actualizar: Proyectos
+    ####################################
+"""
+class UpdateProject(APIView):
+    def put(self, request, pk):
+        try:
+            proyecto = Projects.objects.get(pk=pk)
+        except Projects.DoesNotExist:
+            return Response({'error': 'Proyecto no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+        
+        id = proyecto.id
+        id_proyecto = request.data.get('id_proyecto', proyecto.id_proyecto)
+        tipo_proyecto = request.data.get('tipo_proyecto', proyecto.tipo_proyecto)
+        estacion = request.data.get('estacion', proyecto.estacion)
+        nom_micro = request.data.get('nom_micro', proyecto.nom_micro)
+        storage = request.data.get('storage', proyecto.storage)
+
+        if Projects.objects.exclude(id=id).filter(id_proyecto=id_proyecto).exists():
+            return Response({'error': 'Ese ID de proyecto ya está en uso por otro proyecto'}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        proyecto.id_proyecto = id_proyecto
+        proyecto.tipo_proyecto = tipo_proyecto
+        proyecto.estacion = estacion
+        proyecto.nom_micro = nom_micro
+        proyecto.storage = storage
+        proyecto.save()
+
+        serializer = ProjectsSerializer(proyecto)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+"""
+    ####################################
+        Eliminar: Proyectos
+    ####################################
+"""
+class DeleteProject(APIView):
+    def delete(self, request, pk):
+        try:
+            proyecto = Projects.objects.get(pk=pk)
+        except Projects.DoesNotExist:
+            return Response({'error': 'Proyecto no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Eliminar proyecto
+        proyecto.delete()
+        return Response({'message': 'Proyecto eliminado correctamente'}, status=status.HTTP_200_OK)
+
+"""
+    $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+        CRUD (Create, Read, Update, Delete) de: Usuarios | Administradores | Superusuarios
+    $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+"""
+
+"""
+    ####################################
+        Vistas de: Usuarios | Administradores | Superusuarios
     ####################################
 """
 
@@ -78,7 +187,7 @@ class UsuarioList(viewsets.ReadOnlyModelViewSet):
 
 """
     ####################################
-        Crear Usuarios
+        Crear: Usuarios | Administradores | Superusuarios
     ####################################
 """
 class RegisterTestUser(APIView):
@@ -117,7 +226,7 @@ class RegisterTestUser(APIView):
     
 """
     ####################################
-        Actualizar Usuarios
+        Actualizar: Usuarios | Administradores | Superusuarios
     ####################################
 """
 class UpdateTestUser(APIView):
@@ -155,7 +264,7 @@ class UpdateTestUser(APIView):
     
 """
     ####################################
-        Eliminar Usuarios
+        Eliminar: Usuarios | Administradores | Superusuarios
     ####################################
 """
 class DeleteTestUser(APIView):
@@ -168,6 +277,12 @@ class DeleteTestUser(APIView):
         # Eliminar usuario
         user.delete()
         return Response({'message': 'Usuario eliminado correctamente'}, status=status.HTTP_200_OK)
+
+"""
+    $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+        Vistas de Autenticacion
+    $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+"""
 
 """
     ####################################
@@ -189,11 +304,68 @@ class LoginPlainView(APIView):
             print("No se encontró usuario con esas credenciales")
             return Response({'error': 'Credenciales inválidas'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        """hashed_password = hashlib.md5(password.encode()).hexdigest()
-        # Buscar usuario con contraseña en texto plano
+"""
+    $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+        Vistas de Archivos Privados (solo se pueden ver si estas logueado)
+    $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+"""
+
+"""
+    ####################################
+        Ver: Archivos Privados
+    ####################################
+"""
+class PrivateFilesViewSet(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        private_files = PrivateFiles.objects.filter(owner=request.user)  # filtra por usuario logueado
+        serializer = PrivateFilesSerializer(private_files, many=True)
+        print('Archivos privados accedidos por:', request.user.username)
+        return Response(serializer.data)
+
+"""
+    ####################################
+        Subir o Cargar: Archivos Privados
+    ####################################
+"""
+class UploadPrivateFile(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        archivo = request.FILES.get('file')
+
+        if not archivo:
+            return Response({'error': 'No se ha proporcionado ningún archivo.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        documento = PrivateFiles.objects.create(
+            name = archivo.name,
+            path = archivo,
+            format = archivo.name.split('.')[-1],
+            size = archivo.size,
+            owner = request.user,
+        )
+
+        serializer = PrivateFilesSerializer(documento)
+        print(f'Archivo {archivo.name} subido por: {request.user.username}')
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+"""
+    ####################################
+        Eliminar: Archivos Privados
+    ####################################
+"""
+class DeletePrivateFile(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
         try:
-            user = User.objects.get(username=username, password=hashed_password)
-            serializer = UsuariosSerializer(user)
-            return Response(serializer.data)
-        except User.DoesNotExist:
-            return Response({'error': 'Credenciales inválidas'}, status=status.HTTP_401_UNAUTHORIZED)"""
+            documento = PrivateFiles.objects.get(pk=pk, owner=request.user)
+        except PrivateFiles.DoesNotExist:
+            print(f'Intento fallido de eliminar archivo por: {request.user.username}')
+            return Response({'error': 'Archivo no encontrado o no tienes permiso para eliminarlo.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        documento.path.delete()  # Eliminar el archivo del sistema de archivos
+        documento.delete()       # Eliminar el registro de la base de datos
+        print(f'Archivo {documento.name} eliminado por: {request.user.username}')
+        return Response({'message': 'Archivo eliminado correctamente.'}, status=status.HTTP_204_NO_CONTENT)

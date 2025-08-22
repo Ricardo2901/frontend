@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import User
 
 # Create your models here.
 class Climas(models.Model):
@@ -208,6 +209,34 @@ class Precipitacion(models.Model):
     class Meta:
         managed = False
         db_table = 'precipitacion'
+
+
+def user_directory_path(instance, filename):
+    # Los archivos se guardan en media/private_files/<username>/<filename>
+    return f'private_files/{instance.owner.username}/{filename}'
+
+class PrivateFiles(models.Model):
+    name = models.CharField(max_length=100)
+    path = models.FileField(upload_to=user_directory_path)
+    format = models.CharField(max_length=10, blank=True, null=True)
+    size = models.BigIntegerField(blank=True, null=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'private_files'
+
+        
+class Projects(models.Model):
+    id_proyecto = models.IntegerField(blank=True, null=True)
+    tipo_proyecto = models.TextField(blank=True, null=True)
+    estacion = models.PositiveIntegerField(blank=True, null=True)
+    nom_micro = models.CharField(max_length=45, blank=True, null=True)
+    storage = models.CharField(max_length=918, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'projects'
 
 
 class ProvinciasMicrocuencas(models.Model):
